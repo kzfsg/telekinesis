@@ -1,0 +1,131 @@
+/* ══ Telekinesis tokens ════════════════════════════════════
+   Cold until it moves. Everything rests in ash and cold navy, the
+   way a heat camera sees a still room. Heat colour appears only
+   where something moves or is touched, and it cools away after. */
+:root {
+  /* the cold: surfaces and ink */
+  --night: #0a1233; /* the camera's view of a still room */
+  --night-2: #141d48; /* raised surface on night */
+  --night-line: #26306a;
+  --frost: #e8edf2; /* the page */
+  --card: #f7f9fb;
+  --line: #d3dbe4;
+  --ash: #96969a; /* at rest: the logo's own grey */
+  --ash-2: #c4c6cc;
+  --ink: #0e1a3d;
+  --ink-2: #4a5672;
+  --ink-3: #69748c;
+  --on-night: #e9edfb;
+  --on-night-2: #a6b0d6;
+
+  /* the heat: one ramp, still (core) to moving most (rim) */
+  --core: #0c2c96;
+  --deep: #2878f5;
+  --chill: #78d7ff;
+  --glow: #ffe464;
+  --ember: #ff9628;
+  --flare: #ff323c;
+  --rim: #ff5abe;
+  --heat-ramp: linear-gradient(90deg, var(--core), var(--deep), var(--chill), var(--glow), var(--ember), var(--flare), var(--rim));
+  /* the warm half, for fills that mean effort being made */
+  --heat-warm: linear-gradient(90deg, var(--chill), var(--glow), var(--ember), var(--flare));
+
+  /* data on night: minutes moved, a single ember hue, checked for
+     monotone lightness and contrast against night */
+  --data-0: #a8401f;
+  --data-1: #c5541e;
+  --data-2: #de6e26;
+  --data-3: #ef8c40;
+  --data-4: #f8ad66;
+  --data-5: #fdcf98;
+  --data-none: #1b2557;
+
+  /* data on frost: two series, checked for colour-vision deficiency */
+  --series-observed: #2b5fd9;
+  --series-twin: #c2701b;
+
+  /* status, never colour alone: always an icon and a word */
+  --good: #1d7a45;
+  --warn: #9a6200;
+  --alert: #b3262e;
+
+  /* actions wear the heat core; focus wears the heat rim */
+  --action: var(--core);
+  --focus: var(--rim);
+
+  /* type: Archivo is the logo's face. Set wide it is the main line;
+     at its normal width and heavy it is every title. Everything else
+     is Atkinson Hyperlegible, drawn for low vision,
+     because the people reading it may be losing theirs. Live
+     readouts use its mono, the way a heat camera prints a reading. */
+  --face-display: "Archivo", system-ui, sans-serif;
+  --face: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --face-readout: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+
+  /* a 1.25 scale from 18px: larger than usual, for older eyes */
+  --t-xs: 0.875rem;
+  --t-s: 1rem;
+  --t-m: 1.125rem;
+  --t-l: 1.4rem;
+  --t-xl: 1.75rem;
+  --t-2xl: 2.2rem;
+  --t-3xl: 3.4rem;
+
+  /* radius follows temperature: the patient's warm screens are
+     round, the study team's cold instruments are square */
+  --r-cold: 4px;
+  --r-mid: 12px;
+  --r-warm: 24px;
+
+  /* how long heat takes to leave once the hand has gone */
+  --cool: 1.4s;
+
+  font: 400 var(--t-m) / 1.55 var(--face);
+  color: var(--ink);
+  background: var(--frost);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+p,
+figure {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ══ Heat word ═════════════════════════════════════════════ */
+.heat {
+  position: relative;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;}
+
+.heat-canvas { display: block; }

@@ -1,0 +1,489 @@
+/* ══ Landing ═══════════════════════════════════════════════
+   Full-bleed bands, each a single idea: the night hero, then frost,
+   white and night again, alternating so each band reads as a scene. */
+
+/* ── hero: the one place the page is a heat camera ───── */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background: var(--night);
+  color: var(--on-night);
+  overflow: hidden;
+}
+.hero-heat {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hero-inner {
+  position: relative;
+  width: min(1120px, 100% - 48px);
+  padding: 120px 0 96px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.hero .logo {
+  display: grid;
+  justify-items: center;
+}
+.hero-lede {
+  font-family: var(--face-display);
+  font-weight: 700;
+  font-variation-settings: "wdth" 125;
+  font-size: clamp(2rem, 4.6vw, 3.75rem);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  max-width: 17ch;
+}
+
+/* ── bands ────────────────────────────────────────────── */
+.ls {
+  padding: 144px 0;
+  scroll-margin-top: 40px;
+}
+.ls-white {
+  background: #fff;
+}
+.ls-night {
+  background: var(--night);
+  color: var(--on-night);
+}
+.ls-inner {
+  width: min(1248px, 100% - 64px);
+  margin: 0 auto;
+}
+.ls h2 {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  max-width: 14ch;
+}
+.ls-body {
+  margin-top: 24px;
+  font-size: var(--t-l);
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 40ch;
+}
+.ls-night .ls-body {
+  color: var(--on-night-2);
+}
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 64px;
+  align-items: center;
+}
+
+/* big lines with rules, like a tally */
+.biglist {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.biglist li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--face-display);
+  font-weight: 800;
+  font-size: clamp(1.75rem, 3vw, 2.6rem);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.biglist cite {
+  font-style: normal;
+  font-family: var(--face-readout);
+  font-weight: 400;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* a year, a cell a day: cold, but for four */
+.year {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px 24px 18px;
+  box-shadow: 0 1px 2px rgba(14, 26, 61, 0.05), 0 24px 48px -28px rgba(14, 26, 61, 0.25);
+}
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(52, minmax(0, 1fr));
+  grid-template-rows: repeat(7, auto);
+  gap: 2px;
+}
+.year-grid i {
+  aspect-ratio: 1;
+  border-radius: 1.5px;
+  background: var(--frost);
+}
+.year-grid i.on {
+  background: var(--ember);
+  box-shadow: 0 0 0 2px rgba(255, 150, 40, 0.25);
+}
+.year-marks {
+  position: relative;
+  height: 22px;
+  margin-top: 8px;
+}
+.year-marks span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: var(--face-readout);
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.year-marks span:last-child {
+  transform: translateX(-90%);
+}
+.year figcaption {
+  margin-top: 10px;
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+
+/* how it works: a real sequence, so the cards are numbered */
+.steps {
+  list-style: none;
+  margin: 56px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.steps li {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 280px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--frost);
+}
+.step-n {
+  font-family: var(--face-display);
+  font-weight: 900;
+  font-variation-settings: "wdth" 125;
+  font-size: 4rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin-bottom: auto;
+  padding-bottom: 48px;
+  color: var(--ink);
+}
+.steps h3 {
+  font-size: var(--t-l);
+}
+.steps p {
+  color: var(--ink-2);
+  font-size: var(--t-s);
+}
+
+/* the shift: cold four, hot two-sixty */
+.shift {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 48px;
+  margin: 72px 0 56px;
+}
+.shift > div {
+  display: grid;
+  gap: 18px;
+}
+.shift-n {
+  font-family: var(--face-display);
+  font-weight: 900;
+  font-variation-settings: "wdth" 125;
+  font-size: clamp(6rem, 15vw, 13rem);
+  line-height: 0.82;
+  letter-spacing: -0.05em;
+}
+.shift-cold {
+  color: var(--ash);
+}
+.shift-hot {
+  background: linear-gradient(100deg, var(--deep) 0%, var(--chill) 22%, var(--glow) 45%, var(--ember) 68%, var(--flare) 86%, var(--rim) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.shift-label {
+  font-size: var(--t-s);
+  color: var(--on-night);
+}
+
+/* one participant */
+.example-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 16px;
+  max-width: 380px;
+  box-shadow: 0 1px 2px rgba(14, 26, 61, 0.05);
+}
+.who-mark {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--face-display);
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--heat-warm);
+}
+.who div {
+  display: grid;
+  gap: 2px;
+}
+.who span {
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+}
+.gamecards {
+  list-style: none;
+  margin: 56px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.gamecards li {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 22px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(14, 26, 61, 0.05);
+}
+.gamecard-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+.gamecard-top .status {
+  white-space: nowrap;
+}
+.gamecard-top h3 {
+  font-size: var(--t-l);
+  font-weight: 800;
+}
+.gamecards p {
+  font-size: var(--t-s);
+  color: var(--ink-2);
+}
+.month {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: 64px;
+  align-items: center;
+  margin-top: 56px;
+}
+.month-sum {
+  display: grid;
+  gap: 4px;
+  font-family: var(--face-display);
+  font-weight: 800;
+  font-size: clamp(1.75rem, 3vw, 2.6rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+.month-sum span {
+  color: var(--ink-3);
+}
+
+/* the data: a chart panel and a session trace */
+.data-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: 16px;
+  margin-top: 56px;
+  align-items: start;
+}
+.panel {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--frost);
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+}
+.panel .dot {
+  stroke: var(--frost);
+}
+.panel-next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #fff;
+  font-size: var(--t-s);
+}
+.panel-next strong {
+  font-family: var(--face-display);
+}
+.trace-top {
+  display: flex;
+  gap: 40px;
+}
+.trace-top div {
+  display: grid;
+  gap: 2px;
+}
+.trace-top strong {
+  font-family: var(--face-display);
+  font-size: var(--t-xl);
+  font-weight: 800;
+}
+.trace {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.trace li {
+  display: grid;
+  grid-template-columns: 3.4em 6.5em minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-xs);
+}
+.trace-t {
+  font-family: var(--face-readout);
+  color: var(--ink-3);
+}
+.trace-what {
+  font-weight: 700;
+}
+.trace-detail {
+  color: var(--ink-2);
+}
+.trace-checks,
+.trace-split > div {
+  display: grid;
+  gap: 8px;
+}
+.trace-checks ul,
+.trace-split ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: var(--t-s);
+}
+.trace-checks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trace-checks svg {
+  width: 16px;
+  height: 16px;
+  color: var(--good);
+}
+.trace-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* close: the name's heat, one line, one action */
+.ls-close {
+  padding: 120px 0 112px;
+}
+.close {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  text-align: center;
+}
+.close .heat {
+  cursor: default;
+}
+.close-line {
+  font-size: var(--t-xl);
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.lfoot {
+  width: min(1248px, 100% - 64px);
+  margin: 0 auto;
+  padding: 28px 0 40px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 24px;
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  border-top: 1px solid var(--line);
+}
+.lfoot a {
+  color: var(--ink);
+}
+
+/* ── small screens ────────────────────────────────────── */
+@media (max-width: 960px) {
+  .ls {
+    padding: 96px 0;
+  }
+  .ls-inner,
+  .lfoot {
+    width: calc(100% - 40px);
+  }
+  .split,
+  .month,
+  .data-panels,
+  .shift {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gamecards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .steps li {
+    min-height: 0;
+  }
+}

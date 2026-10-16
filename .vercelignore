@@ -1,0 +1,7 @@
+.playwright-mcp
+.atlas
+.mcp.json
+AGENTS.md
+CLAUDE.md
+node_modules
+dist
