@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
    with its asterisk warm, the few places there are to go, and one
    action. It floats over the page as glass, and turns light-on-dark
    whenever a dark section is passing under it. */
-export function SiteNav({ current }: { current: "home" | "design" }) {
+export function SiteNav({ current }: { current: "home" | "design" | "play" }) {
   const home = current === "home";
-  const [dark, setDark] = useState(home);
+  const [dark, setDark] = useState(current !== "design");
 
   useEffect(() => {
     const check = () => {
@@ -52,13 +52,13 @@ export function SiteNav({ current }: { current: "home" | "design" }) {
             <a href={home ? "#data" : "/#data"}>The data</a>
           </li>
           <li>
-            <a href="/design" aria-current={home ? undefined : "page"}>
+            <a href="/design" aria-current={current === "design" ? "page" : undefined}>
               Design system
             </a>
           </li>
         </ul>
-        <a className="sitenav-action" href={home ? "#example" : "/#example"}>
-          See a participant
+        <a className="sitenav-action" href="/play" aria-current={current === "play" ? "page" : undefined}>
+          Try the games
         </a>
       </nav>
     </header>
