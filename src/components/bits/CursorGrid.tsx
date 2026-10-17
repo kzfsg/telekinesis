@@ -38,6 +38,9 @@ export interface CursorGridProps {
      in its order — the freshest heat a navy core, opening through
      blue, cyan, yellow, orange and red to a pink rim that fades out */
   neon?: boolean;
+  /* Telekinesis: seconds between pulses sent out on their own from the
+     top-left corner, as if clicked there; 0 for none */
+  autoPulse?: number;
   dpr?: number;
   children?: ReactNode;
   className?: string;
@@ -68,6 +71,7 @@ type Settings = {
   intro: boolean;
   heat: boolean;
   neon: boolean;
+  autoPulse: number;
   dpr?: number;
 };
 
@@ -343,6 +347,7 @@ const CursorGrid = ({
   lightMode = false,
   heat = false,
   neon = false,
+  autoPulse = 0,
   dpr,
   children,
   className = '',
@@ -376,6 +381,7 @@ const CursorGrid = ({
     intro,
     heat,
     neon,
+    autoPulse: Math.max(0, autoPulse),
     dpr
   };
   const settingsRef = useRef(settings);
@@ -417,6 +423,7 @@ const CursorGrid = ({
     let pixels = new Uint8Array(0);
     let presence = 0;
     let clock = 0;
+    let nextAutoPulse = 0;
     let introClock = settingsRef.current.intro && !reduce ? 0 : 1;
     let raf = 0;
     let last = 0;
@@ -583,6 +590,10 @@ const CursorGrid = ({
         let spawns = Math.floor(chance) + (Math.random() < chance % 1 ? 1 : 0);
         while (spawns-- > 0) light(Math.floor(Math.random() * levels.length), 0.25 + Math.random() * 0.45);
       }
+      if (s.autoPulse > 0 && !reduce && clock >= nextAutoPulse) {
+        pulses.push({ x: 0, y: 0, t0: clock, strength: 1 });
+        nextAutoPulse = clock + s.autoPulse;
+      }
       if (pulses.length) sweepPulses(s);
       else if (waves.length && waves.some(value => value > 0)) {
         waves.fill(0);
@@ -605,7 +616,7 @@ const CursorGrid = ({
         if (levels[i] > 0 || targets[i] > 0) active = true;
       }
       if (Math.abs(mouse.x - pointer.x) + Math.abs(mouse.y - pointer.y) > 0.05 && presence > 0.002) active = true;
-      if (s.ambient > 0 && !reduce) active = true;
+      if ((s.ambient > 0 || s.autoPulse > 0) && !reduce) active = true;
 
       draw();
       if (active) raf = requestAnimationFrame(frame);

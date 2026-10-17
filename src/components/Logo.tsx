@@ -15,7 +15,7 @@ export function Logo() {
             shape="Word"
             auto
             path="sweep"
-            period={0.5}
+            period={10}
             cycle={false}
             label="Telekinesis"
             width={Math.round(logoWidth * 0.92)}
