@@ -75,7 +75,7 @@ export default function Landing() {
       {/* ── hero: the one place the page itself is a heat camera ── */}
       <header className="hero" data-dark>
         <div className="hero-heat" aria-hidden="true">
-          <CursorGrid heat neon cellSize={18} cellGap={2} cellRadius={2} radius={110} fillOpacity={0.34} maxOpacity={0.34} gridOpacity={0.07} gridColor="#3A4680" holdTime={300} fadeDuration={2200} spotlight={0.15} edgeFade={0.04} clickPulse pulseSpeed={700} autoPulse={0.5} intro={false} />
+          <CursorGrid heat neon cellSize={18} cellGap={2} cellRadius={2} radius={110} fillOpacity={0.34} maxOpacity={0.34} gridOpacity={0.07} gridColor="#3A4680" holdTime={300} fadeDuration={2200} spotlight={0.15} edgeFade={0.04} clickPulse pulseSpeed={700} autoPulse={10} intro={false} />
         </div>
         <div className="hero-inner">
           <Logo />
