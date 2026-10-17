@@ -1,8 +1,20 @@
+import { lazy, Suspense } from "react";
 import DesignSystem from "./pages/DesignSystem";
 import Landing from "./pages/Landing";
 import "./styles/system.css";
 
-/* two pages, so a path check is all the routing there is */
+/* the games carry the body tracker, so they load only when opened */
+const Play = lazy(() => import("./pages/Play"));
+
+/* three pages, so a path check is all the routing there is */
 export default function App() {
-  return window.location.pathname.startsWith("/design") ? <DesignSystem /> : <Landing />;
+  const path = window.location.pathname;
+  if (path.startsWith("/design")) return <DesignSystem />;
+  if (path.startsWith("/play"))
+    return (
+      <Suspense fallback={<main className="play-wait" />}>
+        <Play />
+      </Suspense>
+    );
+  return <Landing />;
 }

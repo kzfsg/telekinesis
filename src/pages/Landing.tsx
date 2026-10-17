@@ -291,8 +291,8 @@ export default function Landing() {
             <p id="close-title" className="close-line">
               Let the next assessment happen at home.
             </p>
-            <HeatLink href="#how" size="l">
-              See how it works
+            <HeatLink href="/play" size="l">
+              Try the games
             </HeatLink>
           </div>
         </section>

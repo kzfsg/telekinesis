@@ -1011,3 +1011,9 @@ a.hbtn {
     display: none;
   }
 }
+
+/* while the games load */
+.play-wait {
+  min-height: 100vh;
+  background: var(--night);
+}
