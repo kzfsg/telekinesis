@@ -16,6 +16,10 @@ function api(): Plugin {
             const { GET } = await import('./api/voice.ts')
             return send(res, await GET(new Request(url)))
           }
+          if (url.pathname === '/api/coach' && req.method === 'POST') {
+            const { POST } = await import('./api/coach.ts')
+            return send(res, await POST(new Request(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: await body(req) })))
+          }
           if (url.pathname.startsWith('/api/lab')) return await lab(url, req, res)
         } catch (e) {
           res.statusCode = 500
