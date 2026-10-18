@@ -18,7 +18,8 @@ function api(): Plugin {
           }
           if (url.pathname === '/api/coach' && req.method === 'POST') {
             const { POST } = await import('./api/coach.ts')
-            return send(res, await POST(new Request(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: await body(req) })))
+            const headers = { 'Content-Type': 'application/json', ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }
+            return send(res, await POST(new Request(new URL(url.pathname, `http://${req.headers.host}`), { method: 'POST', headers, body: await body(req) })))
           }
           if (url.pathname.startsWith('/api/lab')) return await lab(url, req, res)
         } catch (e) {
@@ -32,12 +33,16 @@ function api(): Plugin {
 }
 
 async function lab(url: URL, req: IncomingMessage, res: ServerResponse) {
-  const { adopt, labStatus, startRun, subscribe } = await import('./lab/server.ts')
   const json = (body: unknown, status = 200) => {
     res.statusCode = status
     res.setHeader('Content-Type', 'application/json')
     res.end(JSON.stringify(body))
   }
+  /* the Lab runs Droid on this machine: a page on another site must not
+     be able to start a run here, and browsers send its POST without asking */
+  const origin = req.headers.origin
+  if (origin && new URL(origin).host !== req.headers.host) return json({ error: 'Not allowed' }, 403)
+  const { adopt, labStatus, startRun, subscribe } = await import('./lab/server.ts')
   const [, , , , id, action] = url.pathname.split('/')
   if (url.pathname === '/api/lab/status') return json(labStatus())
   if (url.pathname === '/api/lab/runs' && req.method === 'POST') {

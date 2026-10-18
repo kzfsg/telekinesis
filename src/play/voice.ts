@@ -5,8 +5,7 @@
    the newest line waits: an instruction that's already out of date is
    worse than silence. */
 
-/* what /api/coach takes and gives back */
-type CoachGame = { name: string; setup: string };
+/* what /api/coach gives back */
 type CoachResponse = { sdp: string; sessionId: string };
 
 export type Coach = {
@@ -47,7 +46,7 @@ function iceGathered(pc: RTCPeerConnection): Promise<void> {
   });
 }
 
-export function createCoach(game: CoachGame): Coach {
+export function createCoach(): Coach {
   const audio = new Audio();
   audio.autoplay = true;
   /* GPT-Live's clock runs on input audio, and lines are spoken as it
@@ -123,7 +122,7 @@ export function createCoach(game: CoachGame): Coach {
     const res = await fetch("/api/coach", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sdp: pc.localDescription!.sdp, game }),
+      body: JSON.stringify({ sdp: pc.localDescription!.sdp }),
     });
     if (!res.ok) throw new Error(`/api/coach: ${res.status} ${await res.text()}`);
     const { sdp } = (await res.json()) as CoachResponse;

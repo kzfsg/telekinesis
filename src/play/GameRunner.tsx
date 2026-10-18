@@ -157,7 +157,7 @@ export function GameRunner({
   useEffect(() => {
     if (muted) return;
     finishedRef.current = false;
-    const coach = createCoach({ name: GAMES[game].name, setup: GAMES[game].setup });
+    const coach = createCoach();
     coachRef.current = coach;
     return () => {
       coachRef.current = null;
