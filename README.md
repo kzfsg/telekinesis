@@ -120,14 +120,15 @@ Every game mirrors a clinical test, and there are far more tests than four. The 
 
 Droid needs the `droid` CLI on the machine (`npm i -g droid`) and a `FACTORY_API_KEY`, so the Lab works on the dev server only. The deployed site explains this instead.
 
-## The voice coach: GPT-Live
+## The voice coach: Grok Voice
 
-Each game speaks to the participant through an [OpenAI GPT-Live](https://developers.openai.com/api/docs/guides/live) session. Some of the people these games are for can't read a screen from across the room, or can't look at it while they move.
+Each game speaks to the participant through an [xAI Grok Voice](https://docs.x.ai/developers/model-capabilities/audio/voice-agent) session. Some of the people these games are for can't read a screen from across the room, or can't look at it while they move.
 
-- `api/coach.ts` is a Vercel function that starts the session. The browser sends only its WebRTC offer, and the instructions are fixed on the server, so the endpoint can't be borrowed as a general voice assistant; requests from other sites' pages are refused. The function trades the offer with `POST https://api.openai.com/v1/live/sessions` (model `gpt-live-1`, voice `marin`) and returns the answer, so the key never leaves the server. Audio then flows straight between the browser and OpenAI.
-- `src/play/voice.ts` is the coach. Each line goes out on the `oai-events` data channel as `session.instructions.append`, asking for it word for word and at once, so a newer instruction cuts off an older one: an out-of-date instruction is worse than silence. GPT-Live's clock runs on input audio, so the coach sends a steady stream of silence; it never asks for the microphone and doesn't react to people talking in the room.
-- `GameRunner` decides what to say from what changes on screen: the setup while nobody is in view yet, and each new instruction, repeated each time it comes back in Rise and Reach. Nothing about the game logic changed to add a voice. A **Coach on/off** button sits in the game bar: off closes the session (it bills by the second), on opens a new one without restarting the game. It starts off, and the setting is remembered.
-- `api/voice.ts` is the earlier Grok TTS version (`POST https://api.x.ai/v1/tts`), kept for switching back.
+- `api/grok.ts` is a Vercel function that starts the session. It mints a 60-second token with `POST https://api.x.ai/v1/realtime/client_secrets`, so the key never leaves the server, and returns it with the coach's instructions and voice (`eve`, model `grok-voice-latest`). Those are fixed on the server, so the endpoint can't be borrowed as a general voice assistant; requests from other sites' pages are refused. The browser then opens a WebSocket straight to `wss://api.x.ai/v1/realtime`.
+- `src/play/voice.ts` is the coach. Each line goes out as `conversation.item.create` plus `response.create`, asking for it word for word, and a newer line cancels the one being said (`response.cancel`): an out-of-date instruction is worse than silence. Turn detection is off and the coach never asks for the microphone, so it doesn't react to people talking in the room. The reply comes back as 24 kHz PCM, played through Web Audio.
+- If Grok can't be reached, takes more than 8 seconds to start, or drops out, the coach falls back to an OpenAI GPT-Live session over WebRTC (`api/coach.ts`) and says the newest line again, without the game noticing.
+- `GameRunner` decides what to say from what changes on screen: the setup while nobody is in view yet, and each new instruction, repeated each time it comes back in Rise and Reach. Nothing about the game logic changed to add a voice. A **Coach on/off** button sits in the game bar: off closes the session (it bills by time), on opens a new one without restarting the game. It starts off, and the setting is remembered.
+- `api/voice.ts` is the earliest Grok version, plain TTS (`POST https://api.x.ai/v1/tts`), kept for switching back.
 
 ## Tech stack
 
@@ -136,7 +137,7 @@ Each game speaks to the participant through an [OpenAI GPT-Live](https://develop
 | Frontend | React 19, Vite, TypeScript, Motion |
 | Body and hand tracking | MediaPipe Tasks Vision: pose landmarker (lite) and hand landmarker, in the browser |
 | Game logic | Pure TypeScript controllers per game, with a simulated participant for demo mode |
-| Voice coach | OpenAI GPT-Live over WebRTC, started by a Vercel function |
+| Voice coach | xAI Grok Voice over WebSocket, started by a Vercel function; OpenAI GPT-Live as fallback |
 | Game builder | Factory Droid SDK (`@factory/droid-sdk`), in a git worktree per run |
 | Tests | Vitest |
 | Hosting | Vercel |
@@ -151,11 +152,12 @@ npm run dev        # http://localhost:5173
 The games need no keys. For the voice coach and the Lab, put keys in `.env.local`:
 
 ```sh
-OPENAI_API_KEY=...     # GPT-Live voice coach
+XAI_API_KEY=...        # Grok Voice coach
+OPENAI_API_KEY=...     # GPT-Live fallback for the coach (optional)
 FACTORY_API_KEY=...    # Droid, for the Lab; also: npm i -g droid
 ```
 
-On Vercel, set `OPENAI_API_KEY` in the project's environment variables. Open `/play` and choose **Use my camera** to play yourself, or **Watch the demo** to see a simulated participant play. The camera needs `localhost` or HTTPS.
+On Vercel, set `XAI_API_KEY` (and `OPENAI_API_KEY` for the fallback) in the project's environment variables. Open `/play` and choose **Use my camera** to play yourself, or **Watch the demo** to see a simulated participant play. The camera needs `localhost` or HTTPS.
 
 ## Scripts
 
@@ -173,7 +175,7 @@ On Vercel, set `OPENAI_API_KEY` in the project's environment variables. Open `/p
 | --- | --- |
 | `src/pages/` | The landing page (`/`), the games (`/play`), the Lab (`/lab`) and the design system (`/design`) |
 | `lab/` | The Droid server and the brief Droid works from |
-| `api/` | Vercel functions: the GPT-Live coach session (and the earlier Grok voice) |
+| `api/` | Vercel functions: the Grok Voice coach session, the GPT-Live fallback, and the earlier Grok TTS |
 | `src/play/` | Camera and tracker setup, the game runner, results, About pages, quality checks and the session record |
 | `src/play/games/` | One module per game: Rise, Floor rise, Tap and Reach |
 | `src/play/research.ts` | Each game's rationale and its citations |
