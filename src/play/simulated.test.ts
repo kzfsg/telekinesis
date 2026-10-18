@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createChairRise } from "./games/chairRise";
+import { createFloorRise } from "./games/floorRise";
 import { createReach, TARGETS } from "./games/reach";
 import { createTap, summarise } from "./games/tap";
 import type { PoseFrame } from "./pose";
@@ -33,6 +34,16 @@ describe("the simulated participant", () => {
   it("falls short once in the chair stand", () => {
     const g = createChairRise();
     expect(run("chair-rise", 31.6, (f) => g.update(f)).partials).toBe(1);
+  });
+
+  it("rises from the floor, pushing on the thighs", () => {
+    const g = createFloorRise();
+    const s = run("floor-rise", 13, (f) => g.update(f));
+    expect(s.completed).toBe(true);
+    expect(s.riseMs!).toBeGreaterThan(3000);
+    expect(s.riseMs!).toBeLessThan(5000);
+    expect(s.thighsMs).toBeGreaterThan(800);
+    expect(s.floorMs).toBeGreaterThan(0);
   });
 
   it("taps at a Parkinson's-like pace that fades", () => {

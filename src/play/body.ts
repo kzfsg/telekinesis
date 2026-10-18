@@ -15,6 +15,12 @@ export type Posture = {
   /* arms crossed over the chest, as the chair stand asks; overrides
      the arm angles */
   crossed?: boolean;
+  /* for rising from the floor, overriding `rise`: 0 sitting on the
+     floor, 0.5 crouched halfway up, 1 standing tall */
+  floor?: number;
+  /* where the hands are, overriding the arm angles: pressed on the
+     thighs, as in a Gowers' manoeuvre, or flat on the floor */
+  hands?: "thighs" | "floor";
   /* shifts the whole body across and down the frame, as a camera
      knocked or a participant drifting would */
   shift?: { x: number; y: number };
@@ -25,16 +31,28 @@ export type Posture = {
 const ARM = 0.25;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-export function makeBody({ rise = 1, leftArm = 8, rightArm = 8, crossed = false, shift, aspect = 16 / 9 }: Posture = {}): Point[] {
+/* floor to standing, by way of a crouch: nose, shoulder, hip, knee */
+const FLOOR = [0.6, 0.7, 0.9, 0.86];
+const CROUCH = [0.48, 0.58, 0.74, 0.82];
+const TALL = [0.18, 0.3, 0.56, 0.74];
+
+export function makeBody({ rise = 1, floor, hands, leftArm = 8, rightArm = 8, crossed = false, shift, aspect = 16 / 9 }: Posture = {}): Point[] {
   const cx = 0.5;
   /* heights down the frame, seated to standing; the ankles stay put */
-  const y = {
-    nose: lerp(0.32, 0.18, rise),
-    shoulder: lerp(0.44, 0.3, rise),
-    hip: lerp(0.7, 0.56, rise),
-    knee: lerp(0.68, 0.74, rise),
-    ankle: 0.92,
-  };
+  const y =
+    floor === undefined
+      ? {
+          nose: lerp(0.32, 0.18, rise),
+          shoulder: lerp(0.44, 0.3, rise),
+          hip: lerp(0.7, 0.56, rise),
+          knee: lerp(0.68, 0.74, rise),
+          ankle: 0.92,
+        }
+      : (() => {
+          const [a, b, f] = floor < 0.5 ? [FLOOR, CROUCH, floor * 2] : [CROUCH, TALL, floor * 2 - 1];
+          const at = (i: number) => lerp(a[i], b[i], f);
+          return { nose: at(0), shoulder: at(1), hip: at(2), knee: at(3), ankle: 0.92 };
+        })();
   /* half-widths, in square units, turned into the video's x units */
   const w = (half: number) => half / aspect;
   const pts: Point[] = Array.from({ length: 33 }, () => ({ x: cx, y: y.shoulder, visibility: 0.2 }));
@@ -59,7 +77,15 @@ export function makeBody({ rise = 1, leftArm = 8, rightArm = 8, crossed = false,
     put(elbow, e.x, e.y);
     put(wrist, h.x, h.y);
   };
-  if (crossed) {
+  if (hands) {
+    /* palms on the front of the thighs, or on the floor by the feet */
+    const hy = hands === "thighs" ? (y.hip + y.knee) / 2 : y.ankle - 0.01;
+    const hx = hands === "thighs" ? w(0.065) : w(0.16);
+    put(J.leftWrist, cx + hx, hy);
+    put(J.rightWrist, cx - hx, hy);
+    put(J.leftElbow, cx + w(0.13), (y.shoulder + hy) / 2);
+    put(J.rightElbow, cx - w(0.13), (y.shoulder + hy) / 2);
+  } else if (crossed) {
     /* each hand on the other shoulder, elbows low and in front */
     put(J.leftElbow, cx + w(0.07), y.shoulder + 0.11);
     put(J.rightElbow, cx - w(0.07), y.shoulder + 0.11);

@@ -73,7 +73,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
 }
 /* each game warms where the hand is, like every surface here */
@@ -127,6 +127,7 @@
 }
 .hub-game-for {
   justify-self: start;
+  white-space: nowrap;
   padding: 4px 12px;
   font-size: var(--t-xs);
   font-weight: 700;

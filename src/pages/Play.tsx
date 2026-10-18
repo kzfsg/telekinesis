@@ -9,7 +9,7 @@ import "../play/play.css";
 
 type View = { kind: "hub" } | { kind: "game"; game: GameId; mode: Mode; run: number } | { kind: "result"; record: SessionRecord; mode: Mode };
 
-const ORDER: GameId[] = ["chair-rise", "tap", "reach"];
+const ORDER: GameId[] = ["chair-rise", "floor-rise", "tap", "reach"];
 
 /* The games, for real: pick one, play it with the camera or watch a
    simulated participant play it, and see what it measured. */

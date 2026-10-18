@@ -8,7 +8,7 @@ import type { PoseFrame, PoseSource } from "./pose";
    drawn, and gives the heat something to show even when still.
    Tapping moves a hand rather than a body. */
 
-export type GameId = "chair-rise" | "reach" | "tap";
+export type GameId = "chair-rise" | "floor-rise" | "reach" | "tap";
 
 const smooth = (x: number) => {
   const c = Math.min(1, Math.max(0, x));
@@ -34,6 +34,17 @@ export function simulate(game: GameId): PoseSource {
          a partial rise, as Duchenne often shows late in a set */
       const reach = cycle === 6 ? 0.5 : 1;
       return { rise: reach * pulse(u), crossed: true };
+    }
+    if (game === "floor-rise") {
+      /* stands to be measured, gets down, sits, then rises the way a
+         boy with Duchenne often does: hands to the floor, then walked
+         up the thighs to push the body upright, slowing midway */
+      if (s < 1.5) return { floor: 1 };
+      if (s < 3.5) return { floor: 1 - smooth((s - 1.5) / 2) };
+      if (s < 5) return { floor: 0 };
+      const u = Math.min(1, (s - 5) / 6);
+      const f = u < 0.5 ? 0.6 * smooth(u / 0.5) : 0.6 + 0.4 * smooth((u - 0.5) / 0.5);
+      return { floor: f, hands: f < 0.3 ? ("floor" as const) : f < 0.75 ? ("thighs" as const) : undefined };
     }
     if (game === "reach") {
       /* each target in turn, an arm swinging up a little past it */

@@ -47,8 +47,8 @@ const CONDITIONS = [
   {
     name: "Duchenne muscular dystrophy",
     assessed: "Functional tasks such as standing from a chair, rising from the floor and walking are used in mobility assessment.",
-    built: "Rise",
-    prototype: ["Chair-rise counting", "Failed attempts, and how long each stand took", "Recording-quality flags"],
+    built: "Rise and Floor rise",
+    prototype: ["Chair-rise counting, and failed attempts", "Timed rise from the floor", "Hands pushing on the legs, as in a Gowers' manoeuvre", "Recording-quality flags"],
   },
   {
     name: "Parkinson's disease",
@@ -313,7 +313,7 @@ export default function Landing() {
                   <h3>{c.name}</h3>
                   <p>{c.assessed}</p>
                   <div className="condition-built">
-                    <span className="muted small">Prototype, in the game {c.built}</span>
+                    <span className="muted small">Prototype, in {c.built}</span>
                     <ul>
                       {c.prototype.map((x) => (
                         <li key={x}>
@@ -338,22 +338,28 @@ export default function Landing() {
                 Published work has evaluated remote video-based functional assessments in Duchenne muscular dystrophy,
                 including movement tasks such as rising and walking.
               </p>
-              <p className="ls-body">Telekinesis explores automatic capture and technical quality flags for one simplified task.</p>
+              <p className="ls-body">
+                Telekinesis explores automatic capture and technical quality flags for simplified versions of two of
+                them: standing up from a chair, and rising from the floor.
+              </p>
             </div>
             <div className="case">
               <div className="case-block">
                 <span className="muted small">Tasks in the assessment, a selection</span>
                 <ul className="case-tasks">
                   {NSAA_TASKS.map((t) => (
-                    <li key={t} className={t === "Stand up from chair" ? "is-on" : ""}>
+                    <li key={t} className={t === "Stand up from chair" || t === "Rise from floor" ? "is-on" : ""}>
                       {t}
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="case-block">
-                <span className="muted small">What Rise captures, automatically</span>
-                <p>Each full stand, counted, with how long it took. Rises that sink back before standing, counted apart.</p>
+                <span className="muted small">What the games capture, automatically</span>
+                <p>
+                  Rise: each full stand, counted, with how long it took, and rises that sink back counted apart. Floor rise:
+                  the time from floor to standing, where it slowed, and how long the hands pushed on the legs.
+                </p>
               </div>
               <div className="case-block">
                 <span className="muted small">Checked on every recording</span>
@@ -367,7 +373,7 @@ export default function Landing() {
                 <p className="case-note">A failed check doesn't change the score. It marks the session for a person to look at.</p>
               </div>
               <HeatLink href="/play" size="m">
-                Try Rise
+                Try the Duchenne games
               </HeatLink>
             </div>
           </div>

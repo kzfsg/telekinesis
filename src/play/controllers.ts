@@ -1,5 +1,6 @@
 import { dist, mid } from "./geometry";
 import { createChairRise, STAND } from "./games/chairRise";
+import { createFloorRise, LIMIT_MS, RUNGS, TALL } from "./games/floorRise";
 import { createReach, TARGETS } from "./games/reach";
 import { createTap, opening as tapOpening, summarise, TAP_MS, type Tap } from "./games/tap";
 import { H, J, type Point, type PoseFrame } from "./pose";
@@ -55,6 +56,14 @@ export const GAMES: Record<GameId, GameInfo> = {
     mirrors: "30-second chair stand test",
     setup: "A sturdy chair without wheels, placed so the camera sees you from head to feet. Arms crossed over your chest.",
     measures: "Full stands, failed attempts, and whether the recording can be trusted",
+    tracking: "pose",
+  },
+  "floor-rise": {
+    name: "Floor rise",
+    condition: "Duchenne muscular dystrophy",
+    mirrors: "Timed rise from the floor",
+    setup: "A clear patch of floor, the camera low enough to see you head to feet sitting down. Have an adult nearby.",
+    measures: "Time to stand up from the floor, and whether the hands push on the legs",
     tracking: "pose",
   },
   reach: {
@@ -342,6 +351,166 @@ function chairRise(): Controller {
 
 const REACH_LIMIT_S = 60;
 
+/* ══ Floor rise ═══════════════════════════════════════════
+   Three lines of light cross the body at the heights the hips must
+   pass: off the floor, halfway, standing. An ember sits at the hips
+   and climbs with them; each line ignites as it's passed and keeps
+   the time it was reached, so where the rise slowed stays on screen.
+   When the hands press on the thighs, they glow, and the time spent
+   pushing is counted: not a mistake to correct, a sign to record. */
+
+function floorChecks(): Check[] {
+  return riseChecks().filter((c) => c.id === "in-view" || c.id === "light");
+}
+
+function floorRise(): Controller {
+  const game = createFloorRise();
+  const quality = createQuality(floorChecks(), 15);
+  let body: Point[] | null = null;
+  let aspect = 16 / 9;
+  let end: number | null = null;
+  let doneAt = -Infinity;
+  const lit: number[] = [];
+  const litAt: number[] = [];
+  return {
+    get done() {
+      return end !== null;
+    },
+    update(frame, now) {
+      if (end === null) quality.update(frame);
+      if (frame?.landmarks) {
+        body = frame.landmarks;
+        aspect = frame.aspect;
+      }
+      const s = frame ? game.update(frame) : game.state;
+      if (s.phase === "done" && end === null) {
+        end = now;
+        doneAt = now;
+      }
+      s.rungMs.forEach((r, i) => {
+        if (r !== null && lit[i] === undefined) {
+          lit[i] = r;
+          litAt[i] = now;
+        }
+      });
+      /* the clock: running while rising, then the rise's time, or the
+         limit if the participant didn't get up */
+      const t = s.riseMs ?? (s.start === null ? 0 : s.phase === "done" ? LIMIT_MS : Math.max(0, (frame?.t ?? now) - s.start));
+      const instruction =
+        s.phase === "finding"
+          ? "Step back until the camera sees you head to feet."
+          : s.phase === "stand"
+            ? "Stand tall, facing the camera."
+            : s.phase === "down"
+              ? "Now sit down on the floor."
+              : s.phase === "settling"
+                ? "Stay sitting for a moment."
+                : s.phase === "ready"
+                  ? "Stand up as quickly as you safely can."
+                  : s.phase === "rising"
+                    ? "Up you come."
+                    : s.completed
+                      ? "Up. Well done."
+                      : "That's all right. Time's up.";
+      const timing = s.phase === "rising" || s.phase === "done";
+      return {
+        instruction,
+        big: timing ? (t / 1000).toFixed(1) : "0.0",
+        bigLabel: "seconds",
+        readouts: [{ label: "Hands on legs", value: (s.thighsMs / 1000).toFixed(1), unit: " s" }],
+        progress: s.phase === "rising" || s.phase === "ready" ? clamp01(s.height) : null,
+        progressLabel: "Height",
+        meter: s.tall === null ? null : clamp01(s.height),
+        meterLabel: "Height",
+        alert: s.phase === "finding" || end !== null ? null : quality.live(),
+      };
+    },
+    overlay(ctx, now) {
+      const s = game.state;
+      if (!body || s.tall === null || s.phase === "stand") return;
+      const box = fit(ctx.canvas.width, ctx.canvas.height, aspect);
+      const Hh = box.h;
+      const sw = dist(body[J.leftShoulder], body[J.rightShoulder], aspect);
+      const ankle = mid(body[J.leftAnkle], body[J.rightAnkle]);
+      const hips = mid(body[J.leftHip], body[J.rightHip]);
+      const yAt = (frac: number) => ankle.y - frac * s.tall! * sw;
+      const half = (sw * 1.6) / aspect;
+      const lines = [...RUNGS, TALL];
+      const names = ["Off the floor", "Halfway", "Standing"];
+      ctx.save();
+      ctx.font = `700 ${Math.round(Hh * 0.024)}px ${getComputedStyle(document.body).fontFamily}`;
+      ctx.textBaseline = "middle";
+      lines.forEach((frac, i) => {
+        const passed = i < RUNGS.length ? lit[i] !== undefined : s.completed;
+        const [x1, y] = toCanvas({ x: hips.x + half, y: yAt(frac) }, box);
+        const [x2] = toCanvas({ x: hips.x - half, y: yAt(frac) }, box);
+        const flash = passed ? Math.max(0, 1 - (now - (i < RUNGS.length ? litAt[i] : doneAt)) / 500) : 0;
+        ctx.strokeStyle = passed ? rgb(0.55 + i * 0.15 + flash * 0.2, 0.95) : "rgba(120,215,255,0.35)";
+        ctx.lineWidth = passed ? Math.max(3, Hh * (0.006 + flash * 0.01)) : Math.max(2, Hh * 0.003);
+        ctx.setLineDash(passed ? [] : [Hh * 0.014, Hh * 0.01]);
+        ctx.shadowColor = passed ? rgb(0.8, 1) : "transparent";
+        ctx.shadowBlur = passed ? Hh * 0.02 : 0;
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = passed ? "rgba(233,237,251,0.95)" : "rgba(233,237,251,0.5)";
+        const when = i < RUNGS.length ? lit[i] : s.riseMs;
+        ctx.fillText(passed && when != null ? `${names[i]}  ${(when / 1000).toFixed(1)} s` : names[i], Math.max(x1, x2) + Hh * 0.02, y);
+      });
+      ctx.setLineDash([]);
+      /* the ember at the hips */
+      if (s.phase !== "done") {
+        const [hx, hy] = toCanvas(hips, box);
+        const k = clamp01(s.height);
+        const r = Hh * (0.03 + 0.02 * k);
+        const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 2.4);
+        g.addColorStop(0, rgb(0.35 + k * 0.6, 0.95));
+        g.addColorStop(0.4, rgb(0.3 + k * 0.5, 0.45));
+        g.addColorStop(1, rgb(0.2, 0));
+        ctx.globalCompositeOperation = "screen";
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(hx, hy, r * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      }
+      /* hands pressing on the thighs glow */
+      if (s.handsOnThighs) {
+        for (const w of [J.leftWrist, J.rightWrist]) {
+          const [x, y] = toCanvas(body[w], box);
+          ctx.strokeStyle = rgb(0.85 + 0.1 * Math.sin(now / 120), 0.9);
+          ctx.lineWidth = Math.max(3, Hh * 0.006);
+          ctx.beginPath();
+          ctx.arc(x, y, Hh * 0.035, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    },
+    record(demo) {
+      const s = game.state;
+      const sec = (ms: number | null) => (ms === null ? null : Math.round(ms / 100) / 10);
+      return {
+        game: "floor-rise",
+        at: new Date().toISOString(),
+        duration_s: sec(s.riseMs) ?? 30,
+        demo,
+        measures: {
+          completed: s.completed ? 1 : 0,
+          rise_s: sec(s.riseMs),
+          off_floor_s: sec(s.rungMs[0]),
+          halfway_s: sec(s.rungMs[1]),
+          hands_on_legs_s: sec(s.thighsMs),
+          hands_on_floor_s: sec(s.floorMs),
+        },
+        quality: quality.flags(),
+      };
+    },
+  };
+}
+
 function reach(): Controller {
   const game = createReach();
   let aspect = 16 / 9;
@@ -438,7 +607,7 @@ function reach(): Controller {
 }
 
 export function createController(id: GameId): Controller {
-  return id === "chair-rise" ? chairRise() : id === "reach" ? reach() : tap();
+  return id === "chair-rise" ? chairRise() : id === "floor-rise" ? floorRise() : id === "reach" ? reach() : tap();
 }
 
 /* ══ Tap ══════════════════════════════════════════════════

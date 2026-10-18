@@ -12,6 +12,10 @@ export function Result({ record, onAgain, onHub }: { record: SessionRecord; onAg
   const headline =
     record.game === "chair-rise"
       ? { big: String(m.rises), label: "full stands in 30 seconds" }
+      : record.game === "floor-rise"
+        ? m.rise_s === null
+          ? { big: "Not yet", label: "didn't reach standing in 30 seconds" }
+          : { big: `${m.rise_s} s`, label: "to stand up from the floor" }
       : record.game === "reach"
         ? { big: `${m.left_abduction_deg}° and ${m.right_abduction_deg}°`, label: "highest reach, left arm and right" }
         : { big: m.taps_per_s === null ? String(m.taps) : `${m.taps_per_s}`, label: m.taps_per_s === null ? "taps in 10 seconds" : `taps a second, ${m.taps} in 10 seconds` };
@@ -25,6 +29,12 @@ export function Result({ record, onAgain, onHub }: { record: SessionRecord; onAg
           { label: "Fell short", value: String(m.partial_rises ?? 0) },
           { label: "Quickest stand", value: durations.length ? String(Math.min(...durations)) : "–", unit: durations.length ? " s" : "" },
         ]
+      : record.game === "floor-rise"
+        ? [
+            { label: "Off the floor", value: String(m.off_floor_s ?? "–"), unit: m.off_floor_s === null ? "" : " s" },
+            { label: "Halfway", value: String(m.halfway_s ?? "–"), unit: m.halfway_s === null ? "" : " s" },
+            { label: "Hands on legs", value: String(m.hands_on_legs_s), unit: " s" },
+          ]
       : record.game === "reach"
         ? [
             { label: "Targets", value: `${m.targets_reached} of 8` },
