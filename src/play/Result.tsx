@@ -5,7 +5,7 @@ import { payloadBytes, type SessionRecord } from "./session";
 
 /* What the game measured, and exactly what it would send: the
    record itself, printed, with its size, beside what stayed put. */
-export function Result({ record, onAgain, onHub }: { record: SessionRecord; onAgain: () => void; onHub: () => void }) {
+export function Result({ record, onAgain, onHub, onInfo }: { record: SessionRecord; onAgain: () => void; onHub: () => void; onInfo: () => void }) {
   const m = record.measures;
   const info = GAMES[record.game];
 
@@ -87,6 +87,9 @@ export function Result({ record, onAgain, onHub }: { record: SessionRecord; onAg
           </button>
           <button type="button" className="hbtn hbtn-quiet hbtn-l result-quiet" onClick={onHub}>
             Choose another game
+          </button>
+          <button type="button" className="hbtn hbtn-quiet hbtn-l result-quiet" onClick={onInfo}>
+            About this game
           </button>
         </div>
       </div>

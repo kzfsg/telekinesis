@@ -2,12 +2,17 @@ import { useState } from "react";
 import { SiteNav } from "../components/SiteNav";
 import { GAMES } from "../play/controllers";
 import { GameRunner, type Mode } from "../play/GameRunner";
+import { Info } from "../play/Info";
 import { Result } from "../play/Result";
 import { saveSession, type SessionRecord } from "../play/session";
 import type { GameId } from "../play/simulated";
 import "../play/play.css";
 
-type View = { kind: "hub" } | { kind: "game"; game: GameId; mode: Mode; run: number } | { kind: "result"; record: SessionRecord; mode: Mode };
+type View =
+  | { kind: "hub" }
+  | { kind: "info"; game: GameId }
+  | { kind: "game"; game: GameId; mode: Mode; run: number }
+  | { kind: "result"; record: SessionRecord; mode: Mode };
 
 const ORDER: GameId[] = ["chair-rise", "floor-rise", "tap", "reach"];
 
@@ -16,6 +21,11 @@ const ORDER: GameId[] = ["chair-rise", "floor-rise", "tap", "reach"];
 export default function Play() {
   const [view, setView] = useState<View>({ kind: "hub" });
   const [mode, setMode] = useState<Mode>("camera");
+  /* a new screen starts at its top, not wherever the last was scrolled */
+  const go = (next: View) => {
+    setView(next);
+    window.scrollTo(0, 0);
+  };
 
   if (view.kind === "game") {
     return (
@@ -44,9 +54,21 @@ export default function Play() {
         <Result
           record={view.record}
           onAgain={() => setView({ kind: "game", game: view.record.game, mode: view.mode, run: Date.now() })}
-          onHub={() => setView({ kind: "hub" })}
+          onHub={() => go({ kind: "hub" })}
+          onInfo={() => go({ kind: "info", game: view.record.game })}
         />
       </main>
+    );
+  }
+
+  if (view.kind === "info") {
+    return (
+      <>
+        <SiteNav current="play" />
+        <main className="play play-hub" data-dark>
+          <Info game={view.game} onBack={() => go({ kind: "hub" })} onPlay={() => go({ kind: "game", game: view.game, mode, run: Date.now() })} />
+        </main>
+      </>
     );
   }
 
@@ -78,7 +100,15 @@ export default function Play() {
             {ORDER.map((id) => {
               const g = GAMES[id];
               return (
-                <li key={id}>
+                <li key={id} className="hub-game-slot">
+                  <button
+                    type="button"
+                    className="hub-game-info"
+                    aria-label={`About ${g.name}: the research, and how its data could help test a treatment`}
+                    onClick={() => go({ kind: "info", game: id })}
+                  >
+                    <span aria-hidden="true">i</span> About
+                  </button>
                   <button type="button" className="hub-game" onClick={() => setView({ kind: "game", game: id, mode, run: Date.now() })}>
                     <span className="hub-game-name">{g.name}</span>
                     <span className="hub-game-for">{g.condition ?? "General mobility"}</span>
