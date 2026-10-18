@@ -86,7 +86,9 @@ export function simulate(game: GameId): PoseSource {
       if (game === "tap") {
         return { t: now, landmarks: null, hand: hand(s).map((p) => ({ ...p, x: p.x + jitter(), y: p.y + jitter() })), aspect: 16 / 9 };
       }
-      const body = makeBody(posture(s));
+      /* the floor rise is framed a little higher, as a camera set low
+         for it would be, so its feet sit clear of the instruction */
+      const body = makeBody({ ...posture(s), ...(game === "floor-rise" ? { shift: { x: 0, y: -0.1 } } : {}) });
       return { t: now, landmarks: body.map((p) => ({ ...p, x: p.x + jitter(), y: p.y + jitter() })), aspect: 16 / 9 };
     },
     stop() {},

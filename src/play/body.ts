@@ -32,7 +32,7 @@ const ARM = 0.25;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /* floor to standing, by way of a crouch: nose, shoulder, hip, knee */
-const FLOOR = [0.6, 0.7, 0.9, 0.86];
+const FLOOR = [0.58, 0.68, 0.89, 0.87];
 const CROUCH = [0.48, 0.58, 0.74, 0.82];
 const TALL = [0.18, 0.3, 0.56, 0.74];
 
@@ -66,10 +66,15 @@ export function makeBody({ rise = 1, floor, hands, leftArm = 8, rightArm = 8, cr
   put(J.rightShoulder, rs.x, rs.y);
   put(J.leftHip, cx + w(0.06), y.hip);
   put(J.rightHip, cx - w(0.06), y.hip);
-  put(J.leftKnee, cx + w(0.07), y.knee);
-  put(J.rightKnee, cx - w(0.07), y.knee);
-  put(J.leftAnkle, cx + w(0.07), y.ankle);
-  put(J.rightAnkle, cx - w(0.07), y.ankle);
+  /* on the floor the legs sit crossed, knees out wide and feet tucked
+     in; they draw together as the body comes up */
+  const sitting = floor === undefined ? 0 : Math.max(0, 1 - floor * 2);
+  const knee = w(lerp(0.07, 0.17, sitting));
+  const foot = w(lerp(0.07, 0.03, sitting));
+  put(J.leftKnee, cx + knee, y.knee);
+  put(J.rightKnee, cx - knee, y.knee);
+  put(J.leftAnkle, cx + foot, y.ankle);
+  put(J.rightAnkle, cx - foot, y.ankle);
 
   const arm = (s: Point, side: "left" | "right", deg: number, elbow: number, wrist: number) => {
     const e = reachPoint(s, side, deg, ARM * 0.52, aspect);
@@ -114,30 +119,43 @@ export type HandPose = {
    placed so the thumb-to-index gap is exactly `opening`. */
 export function makeHand({ opening = 0.8, at = { x: 0.5, y: 0.72 }, size = 0.22, aspect = 16 / 9 }: HandPose = {}): Point[] {
   /* in hand lengths, x across and y down, from the wrist */
-  const P = (x: number, y: number): Point => ({ x: at.x + (x * size) / aspect, y: at.y + y * size, visibility: 0.98 });
-  const lerp2 = (a: [number, number], b: [number, number], t: number): [number, number] => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-  /* the thumb and index meet around here, along a slight lean */
-  const c: [number, number] = [-0.5, -1.05];
-  const d = Math.hypot(0.25, 1);
-  const dir: [number, number] = [0.25 / d, -1 / d];
-  const index: [number, number] = [c[0] + (dir[0] * opening) / 2, c[1] + (dir[1] * opening) / 2];
-  const thumb: [number, number] = [c[0] - (dir[0] * opening) / 2, c[1] - (dir[1] * opening) / 2];
-  const thumbBase: [number, number] = [-0.22, -0.22];
-  const indexBase: [number, number] = [-0.26, -0.95];
-  const curled = (mcp: [number, number]) => [P(mcp[0], mcp[1]), P(mcp[0], mcp[1] - 0.22), P(mcp[0], mcp[1] - 0.16), P(mcp[0], mcp[1] - 0.04)];
+  type V = [number, number];
+  const P = ([x, y]: V): Point => ({ x: at.x + (x * size) / aspect, y: at.y + y * size, visibility: 0.98 });
+  const lerp2 = (a: V, b: V, t: number): V => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  /* a joint partway along a finger, pushed sideways to bend it */
+  const along = (a: V, b: V, t: number, bend: number): V => {
+    const [x, y] = lerp2(a, b, t);
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return [x + ((b[1] - a[1]) / len) * bend, y - ((b[0] - a[0]) / len) * bend];
+  };
+  /* the fingertips meet low, near the thumb's reach; opening, the
+     index straightens up and away and the thumb drops back a little */
+  const meet: V = [-0.5, -0.85];
+  const d = Math.hypot(0.3, 1);
+  const dir: V = [0.3 / d, -1 / d];
+  const index: V = [meet[0] + dir[0] * opening * 0.75, meet[1] + dir[1] * opening * 0.75];
+  const thumb: V = [meet[0] - dir[0] * opening * 0.25, meet[1] - dir[1] * opening * 0.25];
+  const thumbBase: V = [-0.2, -0.15];
+  const thumbMcp: V = [-0.4, -0.35];
+  const indexMcp: V = [-0.26, -0.95];
+  /* the index curls more the closer it is to the thumb */
+  const curl = 0.12 * Math.max(0, 1 - opening);
+  /* the other three fingers folded into the palm: up to the middle
+     knuckle, then back down over it */
+  const folded = (mcp: V): Point[] => [P(mcp), P([mcp[0], mcp[1] - 0.2]), P([mcp[0], mcp[1] - 0.06]), P([mcp[0], mcp[1] + 0.1])];
   return [
-    P(0, 0),
-    P(...thumbBase),
-    P(...lerp2(thumbBase, thumb, 0.4)),
-    P(...lerp2(thumbBase, thumb, 0.72)),
-    P(...thumb),
-    P(...indexBase),
-    P(...lerp2(indexBase, index, 0.45)),
-    P(...lerp2(indexBase, index, 0.75)),
-    P(...index),
-    ...curled([0, -1]),
-    ...curled([0.22, -0.94]),
-    ...curled([0.4, -0.82]),
+    P([0, 0]),
+    P(thumbBase),
+    P(thumbMcp),
+    P(along(thumbMcp, thumb, 0.5, -0.04)),
+    P(thumb),
+    P(indexMcp),
+    P(along(indexMcp, index, 0.4, curl)),
+    P(along(indexMcp, index, 0.72, curl * 0.7)),
+    P(index),
+    ...folded([0, -1]),
+    ...folded([0.22, -0.95]),
+    ...folded([0.4, -0.84]),
   ];
 }
 
