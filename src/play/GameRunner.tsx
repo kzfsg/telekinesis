@@ -187,7 +187,7 @@ export function GameRunner({
           type="button"
           className="runner-exit runner-voice"
           aria-pressed={!muted && !voiceDown}
-          title={voiceDown ? "The voice coach couldn't be reached; try again" : muted ? "Turn on spoken guidance, by GPT-Live" : "Turn off spoken guidance and close the GPT-Live session"}
+          title={voiceDown ? "The voice coach couldn't be reached; try again" : muted ? "Turn on the spoken coach" : "Turn off the spoken coach"}
           onClick={() => {
             if (voiceDown) {
               setVoiceDown(false);
@@ -201,7 +201,7 @@ export function GameRunner({
             saveMuted(!muted);
           }}
         >
-          {voiceDown ? "GPT-Live unavailable" : muted ? "GPT-Live off" : "GPT-Live on"}
+          {voiceDown ? "Coach unavailable" : muted ? "Coach off" : "Coach on"}
         </button>
         <button type="button" className="runner-exit" onClick={onExit}>
           End game
