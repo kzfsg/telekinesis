@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
    with its asterisk warm, the few places there are to go, and one
    action. It floats over the page as glass, and turns light-on-dark
    whenever a dark section is passing under it. */
-export function SiteNav({ current }: { current: "home" | "design" | "play" }) {
+export function SiteNav({ current }: { current: "home" | "design" | "play" | "lab" }) {
   const home = current === "home";
   const [dark, setDark] = useState(current !== "design");
 
@@ -50,6 +50,11 @@ export function SiteNav({ current }: { current: "home" | "design" | "play" }) {
           </li>
           <li>
             <a href={home ? "#data" : "/#data"}>The data</a>
+          </li>
+          <li>
+            <a href="/lab" aria-current={current === "lab" ? "page" : undefined}>
+              Lab
+            </a>
           </li>
           <li>
             <a href="/design" aria-current={current === "design" ? "page" : undefined}>

@@ -47,6 +47,9 @@ export type GameInfo = {
   measures: string;
   /* what the camera has to track */
   tracking: "pose" | "hand";
+  /* how the voice coach treats it: repeat an instruction each time it
+     comes back rather than once */
+  voice?: { repeat?: boolean };
 };
 
 export const GAMES: Record<GameId, GameInfo> = {
@@ -57,6 +60,7 @@ export const GAMES: Record<GameId, GameInfo> = {
     setup: "A sturdy chair without wheels, placed so the camera sees you from head to feet. Arms crossed over your chest.",
     measures: "Full stands, failed attempts, and whether the recording can be trusted",
     tracking: "pose",
+    voice: { repeat: true },
   },
   "floor-rise": {
     name: "Floor rise",
@@ -72,6 +76,7 @@ export const GAMES: Record<GameId, GameInfo> = {
     setup: "Stand facing the camera with room to lift both arms out to the side.",
     measures: "How high each shoulder lifts its arm",
     tracking: "pose",
+    voice: { repeat: true },
   },
   tap: {
     name: "Tap",

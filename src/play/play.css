@@ -341,7 +341,7 @@
 }
 .runner-top {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 24px;
   padding: 16px 24px;
@@ -380,6 +380,14 @@
 }
 .runner-exit:hover {
   border-color: var(--on-night-2);
+}
+/* the voice toggle: ash when off, warm when the coach is speaking */
+.runner-voice[aria-pressed="true"] {
+  border-color: var(--ember);
+}
+.runner-voice:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 .runner-exit-solid {
   color: var(--ink);
@@ -715,7 +723,7 @@
     min-height: 0;
   }
   .runner-top {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto;
   }
   .runner-readouts {
     grid-column: 1 / -1;

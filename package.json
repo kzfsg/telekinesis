@@ -11,10 +11,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@factory/droid-sdk": "^0.9.1",
     "@mediapipe/tasks-vision": "^1.1.1",
     "motion": "^12.43.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

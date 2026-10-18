@@ -104,6 +104,31 @@ For how regulators expect a remote measure to be shown fit for a trial, see the 
 > [!IMPORTANT]
 > Telekinesis is a research prototype. Its measures haven't been validated against clinical ratings, and it isn't for diagnosis.
 
+## The Lab: Droid builds new games
+
+Every game mirrors a clinical test, and there are far more tests than four. The Lab (`/lab`) lets a study team describe a new one in plain English. Then [Factory's Droid](https://docs.factory.com/sdk/typescript) builds it into a playable game while they watch.
+
+**Where Droid runs:** `lab/server.ts` uses `@factory/droid-sdk` to open a Droid session for each request, served at `/api/lab` by the dev server (`vite.config.ts`). Droid does the real work in the running product:
+
+1. **Its own copy.** Each run gets a fresh `git worktree` under `.lab/`, so Droid never edits the app that's running.
+2. **A brief, not a chat.** `lab/GUIDE.md` is appended to Droid's system prompt. It covers how a game is built, the six places a new one is registered, and what "done" means: type check and tests green, and a simulated participant that plays the game to the end.
+3. **Tight permissions.** Droid runs at low autonomy. A `permissionHandler` lets it edit files only inside its worktree and run only `vitest`, `tsc -b` and `oxlint`. Anything else is refused and shown as refused in the log.
+4. **Live log.** Every file Droid reads or edits, every command it runs, and everything it says streams to the page over server-sent events.
+5. **Structured result.** The turn ends with JSON output (`outputFormat`) giving the new game's id, name and summary.
+6. **Checked, not trusted.** The server then runs the type check and the tests itself, and only offers the change if both pass.
+7. **The team decides.** **Add it to the app** applies Droid's patch to the working tree. Vite reloads, the game appears in the picker, and **Watch it played** opens it in demo mode.
+
+Droid needs the `droid` CLI on the machine (`npm i -g droid`) and a `FACTORY_API_KEY`, so the Lab works on the dev server only. The deployed site explains this instead.
+
+## The voice coach: GPT-Live
+
+Each game speaks to the participant through an [OpenAI GPT-Live](https://developers.openai.com/api/docs/guides/live) session. Some of the people these games are for can't read a screen from across the room, or can't look at it while they move.
+
+- `api/coach.ts` is a Vercel function that starts the session. The browser sends its WebRTC offer and the game's name and setup; the function trades it with `POST https://api.openai.com/v1/live/sessions` (model `gpt-live-1`, voice `marin`) and returns the answer, so the key never leaves the server. Audio then flows straight between the browser and OpenAI.
+- `src/play/voice.ts` is the coach. Each line goes out on the `oai-events` data channel as `session.instructions.append`, asking for it word for word and at once, so a newer instruction cuts off an older one: an out-of-date instruction is worse than silence. GPT-Live's clock runs on input audio, so the coach sends a steady stream of silence; it never asks for the microphone and doesn't react to people talking in the room.
+- `GameRunner` decides what to say from what changes on screen: the setup while nobody is in view yet, and each new instruction, repeated each time it comes back in Rise and Reach. Nothing about the game logic changed to add a voice. A **GPT-Live on/off** button sits in the game bar: off closes the session (it bills by the second), on opens a new one without restarting the game. It starts off, and the setting is remembered.
+- `api/voice.ts` is the earlier Grok TTS version (`POST https://api.x.ai/v1/tts`), kept for switching back.
+
 ## Tech stack
 
 | Layer | Technology |
@@ -111,6 +136,8 @@ For how regulators expect a remote measure to be shown fit for a trial, see the 
 | Frontend | React 19, Vite, TypeScript, Motion |
 | Body and hand tracking | MediaPipe Tasks Vision: pose landmarker (lite) and hand landmarker, in the browser |
 | Game logic | Pure TypeScript controllers per game, with a simulated participant for demo mode |
+| Voice coach | OpenAI GPT-Live over WebRTC, started by a Vercel function |
+| Game builder | Factory Droid SDK (`@factory/droid-sdk`), in a git worktree per run |
 | Tests | Vitest |
 | Hosting | Vercel |
 
@@ -121,7 +148,14 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-There are no keys and no backend. Open `/play` and choose **Use my camera** to play yourself, or **Watch the demo** to see a simulated participant play. The camera needs `localhost` or HTTPS.
+The games need no keys. For the voice coach and the Lab, put keys in `.env.local`:
+
+```sh
+OPENAI_API_KEY=...     # GPT-Live voice coach
+FACTORY_API_KEY=...    # Droid, for the Lab; also: npm i -g droid
+```
+
+On Vercel, set `OPENAI_API_KEY` in the project's environment variables. Open `/play` and choose **Use my camera** to play yourself, or **Watch the demo** to see a simulated participant play. The camera needs `localhost` or HTTPS.
 
 ## Scripts
 
@@ -137,7 +171,9 @@ There are no keys and no backend. Open `/play` and choose **Use my camera** to p
 
 | Path | What it holds |
 | --- | --- |
-| `src/pages/` | The landing page (`/`), the games (`/play`) and the design system (`/design`) |
+| `src/pages/` | The landing page (`/`), the games (`/play`), the Lab (`/lab`) and the design system (`/design`) |
+| `lab/` | The Droid server and the brief Droid works from |
+| `api/` | Vercel functions: the GPT-Live coach session (and the earlier Grok voice) |
 | `src/play/` | Camera and tracker setup, the game runner, results, About pages, quality checks and the session record |
 | `src/play/games/` | One module per game: Rise, Floor rise, Tap and Reach |
 | `src/play/research.ts` | Each game's rationale and its citations |

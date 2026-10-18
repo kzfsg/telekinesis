@@ -6,6 +6,7 @@ import type { PoseSource } from "./pose";
 import type { SessionRecord } from "./session";
 import { simulate, type GameId } from "./simulated";
 import { createThermal } from "./thermal";
+import { createCoach, loadMuted, saveMuted, type Coach } from "./voice";
 
 export type Mode = "camera" | "demo";
 
@@ -36,6 +37,16 @@ export function GameRunner({
      browser's permission prompt, sitting unanswered */
   const [slow, setSlow] = useState(false);
   const [stage, setStage] = useState<"asking" | "tracker">("asking");
+  /* the voice coach, a GPT-Live session that's open only while it's
+     switched on, since it bills by the second. The loop reaches it and
+     the mute through refs, so switching it doesn't restart the game. */
+  const [muted, setMuted] = useState(loadMuted);
+  const [voiceDown, setVoiceDown] = useState(false);
+  const [voiceTry, setVoiceTry] = useState(0);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const coachRef = useRef<Coach | null>(null);
+  const finishedRef = useRef(false);
 
   useEffect(() => {
     if (status !== "loading" || mode !== "camera") return;
@@ -52,6 +63,28 @@ export function GameRunner({
     const controller = createController(game);
     const thermal = createThermal();
     let lastKey = "";
+    const voice = GAMES[game].voice ?? {};
+    let heard: Hud | null = null;
+    const said = new Set<string>();
+    const alertAt = new Map<string, number>();
+    let toldSetup = false;
+
+    /* what the coach says, given what changed on screen */
+    const coachOn = (next: Hud, now: number) => {
+      if (mutedRef.current) {
+        heard = next;
+        return;
+      }
+      if (next.alert && next.alert !== heard?.alert && now - (alertAt.get(next.alert) ?? -Infinity) > 6000) {
+        alertAt.set(next.alert, now);
+        coachRef.current?.say(next.alert, { urgent: true });
+      } else if (next.instruction && next.instruction !== heard?.instruction && (voice.repeat || !said.has(next.instruction))) {
+        said.add(next.instruction);
+        coachRef.current?.say(next.instruction);
+      }
+      heard = next;
+      if (coachRef.current?.failed) setVoiceDown(true);
+    };
 
     const loop = (now: number) => {
       if (!alive || !source) return;
@@ -74,10 +107,18 @@ export function GameRunner({
           lastKey = key;
           setHud(next);
         }
-        if (frame?.landmarks || frame?.hand) setFound(true);
+        if (frame?.landmarks || frame?.hand) {
+          setFound(true);
+          coachOn(next, now);
+        } else if (!toldSetup && !mutedRef.current) {
+          /* nobody in view yet: say how to set up, once */
+          toldSetup = true;
+          coachRef.current?.say(GAMES[game].setup);
+        }
         /* a moment to see the final count before the result */
         if (controller.done) {
           finishedAt ??= now;
+          finishedRef.current = true;
           if (now - finishedAt > 1400) {
             alive = false;
             onDone(controller.record(mode === "demo"));
@@ -113,6 +154,18 @@ export function GameRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, mode]);
 
+  useEffect(() => {
+    if (muted) return;
+    finishedRef.current = false;
+    const coach = createCoach({ name: GAMES[game].name, setup: GAMES[game].setup });
+    coachRef.current = coach;
+    return () => {
+      coachRef.current = null;
+      /* a finishing game lets its last line play out */
+      coach.stop(finishedRef.current);
+    };
+  }, [muted, game, mode, voiceTry]);
+
   const info = GAMES[game];
 
   return (
@@ -130,6 +183,26 @@ export function GameRunner({
             <Readout key={r.label} tone="night" label={r.label} value={r.value} unit={r.unit} />
           ))}
         </div>
+        <button
+          type="button"
+          className="runner-exit runner-voice"
+          aria-pressed={!muted && !voiceDown}
+          title={voiceDown ? "The voice coach couldn't be reached; try again" : muted ? "Turn on spoken guidance, by GPT-Live" : "Turn off spoken guidance and close the GPT-Live session"}
+          onClick={() => {
+            if (voiceDown) {
+              setVoiceDown(false);
+              if (muted) {
+                setMuted(false);
+                saveMuted(false);
+              } else setVoiceTry((n) => n + 1);
+              return;
+            }
+            setMuted(!muted);
+            saveMuted(!muted);
+          }}
+        >
+          {voiceDown ? "GPT-Live unavailable" : muted ? "GPT-Live off" : "GPT-Live on"}
+        </button>
         <button type="button" className="runner-exit" onClick={onExit}>
           End game
         </button>
