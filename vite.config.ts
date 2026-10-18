@@ -21,6 +21,11 @@ function api(): Plugin {
             const headers = { 'Content-Type': 'application/json', ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }
             return send(res, await POST(new Request(new URL(url.pathname, `http://${req.headers.host}`), { method: 'POST', headers, body: await body(req) })))
           }
+          if (url.pathname === '/api/grok' && req.method === 'POST') {
+            const { POST } = await import('./api/grok.ts')
+            const headers = req.headers.origin ? { Origin: req.headers.origin } : undefined
+            return send(res, await POST(new Request(new URL(url.pathname, `http://${req.headers.host}`), { method: 'POST', headers })))
+          }
           if (url.pathname.startsWith('/api/lab')) return await lab(url, req, res)
         } catch (e) {
           res.statusCode = 500

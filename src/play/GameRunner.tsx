@@ -37,9 +37,9 @@ export function GameRunner({
      browser's permission prompt, sitting unanswered */
   const [slow, setSlow] = useState(false);
   const [stage, setStage] = useState<"asking" | "tracker">("asking");
-  /* the voice coach, a GPT-Live session that's open only while it's
-     switched on, since it bills by the second. The loop reaches it and
-     the mute through refs, so switching it doesn't restart the game. */
+  /* the voice coach, a Grok Voice session (GPT-Live if Grok fails)
+     that's open only while it's switched on, since it bills by time.
+     The loop reaches it and the mute through refs, so switching it doesn't restart the game. */
   const [muted, setMuted] = useState(loadMuted);
   const [voiceDown, setVoiceDown] = useState(false);
   const [voiceTry, setVoiceTry] = useState(0);
