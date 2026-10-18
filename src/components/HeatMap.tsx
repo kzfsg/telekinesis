@@ -208,6 +208,8 @@ export function HeatMap({
   soft = 50,
   /* how big the patch under the hand is, 0..100 */
   area = 50,
+  /* a multiplier on the whole patch, past what Area reaches */
+  reach = 1,
   /* which heat map the hand reveals */
   colors = "Neon",
   /* the shape it starts on; a press steps to the next */
@@ -236,6 +238,7 @@ export function HeatMap({
   heat?: number;
   soft?: number;
   area?: number;
+  reach?: number;
   colors?: string;
   shape?: string;
   word?: string;
@@ -272,11 +275,11 @@ export function HeatMap({
   periodRef.current = period;
   const pathRef = useRef(path);
   pathRef.current = path;
-  const knobs = useRef({ heat, soft, area, colors });
-  knobs.current = { heat, soft, area, colors };
+  const knobs = useRef({ heat, soft, area, reach, colors });
+  knobs.current = { heat, soft, area, reach, colors };
   /* Area as a multiplier on every radius the hand has: half at 0,
-     as it was at 50, half again at 100 */
-  const spread = () => 0.5 + clamp(knobs.current.area, 0, 100) / 100;
+     as it was at 50, half again at 100 — then times Reach */
+  const spread = () => (0.5 + clamp(knobs.current.area, 0, 100) / 100) * knobs.current.reach;
 
   /* the word, blurred, into the base field — redrawn when the
      word or the softness changes */
