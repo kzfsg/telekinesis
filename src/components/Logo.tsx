@@ -23,6 +23,7 @@ export function Logo() {
             soft={12}
             heat={70}
             area={60}
+            reach={5.6}
           />
           <span
             className="wordmark-star"
