@@ -16,10 +16,19 @@ import { J, type PoseFrame } from "../pose";
    The first second, seated, sets the baseline. A stand counts once
    the ratio climbs past STAND above it; the next can't count until
    it has fallen back below SIT. The gap between the two keeps a
-   wobble halfway up from counting twice. */
+   wobble halfway up from counting twice.
+
+   ── ATTEMPTS ────────────────────────────────────────────
+   A rise that gets well off the seat but sinks back before standing
+   counts as a partial: in Duchenne, failed attempts say as much as
+   successful ones. Each full stand also keeps how long it took, from
+   leaving the seat to standing. */
 
 export const STAND = 1.18;
 export const SIT = 1.08;
+/* off the seat, and far enough up to be an attempt */
+export const LEAVE = 1.03;
+export const ATTEMPT = 1.1;
 const CALIBRATION_MS = 1000;
 
 export type ChairRiseState = {
@@ -31,6 +40,10 @@ export type ChairRiseState = {
   rise: number;
   /* when each stand was counted, ms after the first frame */
   standTimes: number[];
+  /* how long each full stand took, seat to standing, in ms */
+  riseMs: number[];
+  /* rises that got off the seat and sank back without standing */
+  partials: number;
 };
 
 /* the hips' height between ankles and shoulders: higher standing */
@@ -48,7 +61,10 @@ export function hipRatio(frame: PoseFrame): number | null {
 }
 
 export function createChairRise() {
-  let state: ChairRiseState = { phase: "finding", reps: 0, baseline: null, rise: 1, standTimes: [] };
+  let state: ChairRiseState = { phase: "finding", reps: 0, baseline: null, rise: 1, standTimes: [], riseMs: [], partials: 0 };
+  /* while seated: when the hips left the seat, and how high they got */
+  let left: number | null = null;
+  let peak = 1;
   let start: number | null = null;
   let calStart: number | null = null;
   let calSum = 0;
@@ -79,8 +95,21 @@ export function createChairRise() {
       }
 
       const rise = h / state.baseline;
+      if (state.phase === "seated") {
+        if (rise > LEAVE) {
+          left ??= frame.t;
+          peak = Math.max(peak, rise);
+        } else {
+          if (peak > ATTEMPT) state = { ...state, partials: state.partials + 1 };
+          left = null;
+          peak = 1;
+        }
+      }
       if (state.phase === "seated" && rise > STAND) {
-        state = { ...state, phase: "standing", reps: state.reps + 1, standTimes: [...state.standTimes, frame.t - start], rise };
+        const took = frame.t - (left ?? frame.t);
+        left = null;
+        peak = 1;
+        state = { ...state, phase: "standing", reps: state.reps + 1, standTimes: [...state.standTimes, frame.t - start], riseMs: [...state.riseMs, took], rise };
       } else if (state.phase === "standing" && rise < SIT) {
         state = { ...state, phase: "seated", rise };
       } else {

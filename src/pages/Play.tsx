@@ -9,7 +9,7 @@ import "../play/play.css";
 
 type View = { kind: "hub" } | { kind: "game"; game: GameId; mode: Mode; run: number } | { kind: "result"; record: SessionRecord; mode: Mode };
 
-const ORDER: GameId[] = ["chair-rise", "reach", "steady-hand"];
+const ORDER: GameId[] = ["chair-rise", "tap", "reach"];
 
 /* The games, for real: pick one, play it with the camera or watch a
    simulated participant play it, and see what it measured. */
@@ -58,7 +58,7 @@ export default function Play() {
           <div className="hub-head">
             <h1>Pick a game</h1>
             <p>
-              Each one takes under a minute. Your camera tracks how you move, right here in the browser; the video never
+              Each one takes under a minute. Your camera tracks how you move, or how your fingers tap, right here in the browser; the video never
               leaves this device.
             </p>
           </div>
@@ -81,6 +81,7 @@ export default function Play() {
                 <li key={id}>
                   <button type="button" className="hub-game" onClick={() => setView({ kind: "game", game: id, mode, run: Date.now() })}>
                     <span className="hub-game-name">{g.name}</span>
+                    <span className="hub-game-for">{g.condition ?? "General mobility"}</span>
                     <span className="hub-game-measures">{g.measures}</span>
                     <span className="hub-game-setup">{g.setup}</span>
                     <span className="hub-game-mirrors">Mirrors the {g.mirrors.toLowerCase()}</span>

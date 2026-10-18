@@ -12,8 +12,12 @@ export type Posture = {
   /* each arm's abduction in degrees: 0 hanging, 90 out level, 180 up */
   leftArm?: number;
   rightArm?: number;
-  /* an offset added to the right wrist, for tremor */
-  wobble?: { x: number; y: number };
+  /* arms crossed over the chest, as the chair stand asks; overrides
+     the arm angles */
+  crossed?: boolean;
+  /* shifts the whole body across and down the frame, as a camera
+     knocked or a participant drifting would */
+  shift?: { x: number; y: number };
   /* the video's width over its height */
   aspect?: number;
 };
@@ -21,7 +25,7 @@ export type Posture = {
 const ARM = 0.25;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-export function makeBody({ rise = 1, leftArm = 8, rightArm = 8, wobble, aspect = 16 / 9 }: Posture = {}): Point[] {
+export function makeBody({ rise = 1, leftArm = 8, rightArm = 8, crossed = false, shift, aspect = 16 / 9 }: Posture = {}): Point[] {
   const cx = 0.5;
   /* heights down the frame, seated to standing; the ankles stay put */
   const y = {
@@ -55,12 +59,60 @@ export function makeBody({ rise = 1, leftArm = 8, rightArm = 8, wobble, aspect =
     put(elbow, e.x, e.y);
     put(wrist, h.x, h.y);
   };
-  arm(ls, "left", leftArm, J.leftElbow, J.leftWrist);
-  arm(rs, "right", rightArm, J.rightElbow, J.rightWrist);
-  if (wobble) {
-    pts[J.rightWrist] = { ...pts[J.rightWrist], x: pts[J.rightWrist].x + wobble.x / aspect, y: pts[J.rightWrist].y + wobble.y };
+  if (crossed) {
+    /* each hand on the other shoulder, elbows low and in front */
+    put(J.leftElbow, cx + w(0.07), y.shoulder + 0.11);
+    put(J.rightElbow, cx - w(0.07), y.shoulder + 0.11);
+    put(J.leftWrist, cx - w(0.06), y.shoulder + 0.03);
+    put(J.rightWrist, cx + w(0.06), y.shoulder + 0.03);
+  } else {
+    arm(ls, "left", leftArm, J.leftElbow, J.leftWrist);
+    arm(rs, "right", rightArm, J.rightElbow, J.rightWrist);
   }
-  return pts;
+  return shift ? pts.map((p) => ({ ...p, x: p.x + shift.x, y: p.y + shift.y })) : pts;
+}
+
+export type HandPose = {
+  /* the gap between thumb tip and index tip, in hand lengths
+     (wrist to middle knuckle): 0 pinched, about 1 wide open */
+  opening?: number;
+  /* where the wrist sits in the frame, and the hand's length as a
+     share of the frame's height */
+  at?: { x: number; y: number };
+  size?: number;
+  aspect?: number;
+};
+
+/* A hand, held up with the palm to the camera, thumb and index free
+   and the other fingers curled: the 21 points MediaPipe Hand reports,
+   placed so the thumb-to-index gap is exactly `opening`. */
+export function makeHand({ opening = 0.8, at = { x: 0.5, y: 0.72 }, size = 0.22, aspect = 16 / 9 }: HandPose = {}): Point[] {
+  /* in hand lengths, x across and y down, from the wrist */
+  const P = (x: number, y: number): Point => ({ x: at.x + (x * size) / aspect, y: at.y + y * size, visibility: 0.98 });
+  const lerp2 = (a: [number, number], b: [number, number], t: number): [number, number] => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  /* the thumb and index meet around here, along a slight lean */
+  const c: [number, number] = [-0.5, -1.05];
+  const d = Math.hypot(0.25, 1);
+  const dir: [number, number] = [0.25 / d, -1 / d];
+  const index: [number, number] = [c[0] + (dir[0] * opening) / 2, c[1] + (dir[1] * opening) / 2];
+  const thumb: [number, number] = [c[0] - (dir[0] * opening) / 2, c[1] - (dir[1] * opening) / 2];
+  const thumbBase: [number, number] = [-0.22, -0.22];
+  const indexBase: [number, number] = [-0.26, -0.95];
+  const curled = (mcp: [number, number]) => [P(mcp[0], mcp[1]), P(mcp[0], mcp[1] - 0.22), P(mcp[0], mcp[1] - 0.16), P(mcp[0], mcp[1] - 0.04)];
+  return [
+    P(0, 0),
+    P(...thumbBase),
+    P(...lerp2(thumbBase, thumb, 0.4)),
+    P(...lerp2(thumbBase, thumb, 0.72)),
+    P(...thumb),
+    P(...indexBase),
+    P(...lerp2(indexBase, index, 0.45)),
+    P(...lerp2(indexBase, index, 0.75)),
+    P(...index),
+    ...curled([0, -1]),
+    ...curled([0.22, -0.94]),
+    ...curled([0.4, -0.82]),
+  ];
 }
 
 /* the arm length the builder uses, for tests that need it */

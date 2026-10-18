@@ -20,7 +20,7 @@ const STEPS = [
 
 const GAMES = [
   {
-    name: "Chair rise",
+    name: "Rise",
     mirrors: "30-second chair stand test",
     status: { kind: "good" as const, text: "Improving" },
     note: "Best of the week is 14 rises, up 3 since the start. The twin predicts 9.8 without treatment.",
@@ -34,13 +34,34 @@ const GAMES = [
     reading: { label: "Left shoulder", value: "124", unit: "°" },
   },
   {
-    name: "Steady hand",
-    mirrors: "Clinician tremor rating",
+    name: "Tap",
+    mirrors: "Finger-tapping item of a motor exam",
     status: { kind: "good" as const, text: "Stable" },
-    note: "Tremor size and frequency are unchanged across four weeks of daily holds.",
-    reading: { label: "Tremor", value: "4.8", unit: " Hz" },
+    note: "Pace and rhythm are unchanged across four weeks. Taps still fade a little by the tenth second.",
+    reading: { label: "Pace", value: "4.1", unit: " taps a second" },
   },
 ];
+
+/* the conditions the games were built for, and what each one does */
+const CONDITIONS = [
+  {
+    name: "Duchenne muscular dystrophy",
+    assessed: "Functional tasks such as standing from a chair, rising from the floor and walking are used in mobility assessment.",
+    built: "Rise",
+    prototype: ["Chair-rise counting", "Failed attempts, and how long each stand took", "Recording-quality flags"],
+  },
+  {
+    name: "Parkinson's disease",
+    assessed: "Motor assessments include finger tapping and other repeated movements.",
+    built: "Tap",
+    prototype: ["Hand landmark tracking", "Tapping frequency and regularity", "Fade in amplitude, and stalls"],
+  },
+];
+
+/* the North Star's tasks, plainly; one is what Rise simplifies */
+const NSAA_TASKS = ["Stand", "Walk", "Stand up from chair", "Stand on one leg", "Climb box step", "Get to sitting", "Rise from floor", "Jump", "Run 10 m"];
+
+const QUALITY_CHECKS = ["Head and feet in view", "Close enough to measure", "Clear enough to track", "Camera and chair stayed put", "Arms crossed over the chest", "Steady video, 15+ frames a second"];
 
 const MONTH: (number | null)[][] = [
   [6, 7, null, 8, 7, 9, null],
@@ -278,6 +299,76 @@ export default function Landing() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── the conditions ─────────────────────────────── */}
+        <section id="conditions" className="ls" aria-labelledby="conditions-title">
+          <div className="ls-inner">
+            <h2 id="conditions-title">Built around two conditions.</h2>
+            <ul className="conditions">
+              {CONDITIONS.map((c) => (
+                <li key={c.name}>
+                  <h3>{c.name}</h3>
+                  <p>{c.assessed}</p>
+                  <div className="condition-built">
+                    <span className="muted small">Prototype, in the game {c.built}</span>
+                    <ul>
+                      {c.prototype.map((x) => (
+                        <li key={x}>
+                          <Icon kind="good" /> {x}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ── case study ─────────────────────────────────── */}
+        <section id="case-study" className="ls ls-night" data-dark aria-labelledby="case-title">
+          <div className="ls-inner split">
+            <div>
+              <span className="case-kicker">Case study</span>
+              <h2 id="case-title">DMD and the North Star Ambulatory Assessment.</h2>
+              <p className="ls-body">
+                Published work has evaluated remote video-based functional assessments in Duchenne muscular dystrophy,
+                including movement tasks such as rising and walking.
+              </p>
+              <p className="ls-body">Telekinesis explores automatic capture and technical quality flags for one simplified task.</p>
+            </div>
+            <div className="case">
+              <div className="case-block">
+                <span className="muted small">Tasks in the assessment, a selection</span>
+                <ul className="case-tasks">
+                  {NSAA_TASKS.map((t) => (
+                    <li key={t} className={t === "Stand up from chair" ? "is-on" : ""}>
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="case-block">
+                <span className="muted small">What Rise captures, automatically</span>
+                <p>Each full stand, counted, with how long it took. Rises that sink back before standing, counted apart.</p>
+              </div>
+              <div className="case-block">
+                <span className="muted small">Checked on every recording</span>
+                <ul className="case-checks">
+                  {QUALITY_CHECKS.map((c) => (
+                    <li key={c}>
+                      <Icon kind="good" /> {c}
+                    </li>
+                  ))}
+                </ul>
+                <p className="case-note">A failed check doesn't change the score. It marks the session for a person to look at.</p>
+              </div>
+              <HeatLink href="/play" size="m">
+                Try Rise
+              </HeatLink>
             </div>
           </div>
         </section>

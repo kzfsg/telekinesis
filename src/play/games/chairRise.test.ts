@@ -46,6 +46,25 @@ describe("chair rise", () => {
     expect(s.reps).toBe(1);
   });
 
+  it("counts a rise that sinks back as a partial, not a stand", () => {
+    const s = play([...hold(0, 1.2), ...hold(0.45, 0.6), ...hold(0, 0.6), ...hold(1, 0.6), ...hold(0, 0.6)]);
+    expect(s.reps).toBe(1);
+    expect(s.partials).toBe(1);
+  });
+
+  it("does not count shuffling on the seat as a partial", () => {
+    expect(play([...hold(0, 1.2), ...hold(0.12, 0.5), ...hold(0, 0.5)]).partials).toBe(0);
+  });
+
+  it("times each stand from leaving the seat", () => {
+    /* a slow stand: up over a second, in 30 small steps */
+    const up = Array.from({ length: 30 }, (_, i) => (i + 1) / 30);
+    const s = play([...hold(0, 1.2), ...up, ...hold(1, 0.3)]);
+    expect(s.reps).toBe(1);
+    expect(s.riseMs[0]).toBeGreaterThan(400);
+    expect(s.riseMs[0]).toBeLessThan(1000);
+  });
+
   it("keeps the count through a moment out of frame", () => {
     const game = createChairRise();
     const seq = [...hold(0, 1.2), ...hold(1, 0.6), ...hold(0, 0.6)];
