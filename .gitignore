@@ -30,3 +30,6 @@ dist-ssr
 # local IDE index and tool config
 .atlas
 .mcp.json
+
+# Droid Lab worktrees
+.lab

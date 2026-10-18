@@ -1,0 +1,169 @@
+/* The Lab: a brief, then Droid's working log, then the change. Cold
+   at rest like everything else; the log warms only where Droid acts. */
+
+.lab .hub {
+  max-width: 920px;
+}
+.lab-note {
+  padding: 14px 18px;
+  border: 1px solid var(--night-line);
+  border-radius: 14px;
+  color: var(--on-night-2);
+}
+.lab code {
+  font-family: var(--face-readout);
+  font-size: 0.92em;
+}
+.lab-brief {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+.lab-brief label {
+  font-weight: 700;
+  font-size: var(--t-m);
+}
+.lab-brief textarea {
+  width: 100%;
+  padding: 16px 18px;
+  font: inherit;
+  font-size: var(--t-m);
+  line-height: 1.45;
+  color: var(--on-night);
+  background: var(--night-2);
+  border: 2px solid var(--night-line);
+  border-radius: 16px;
+  resize: vertical;
+}
+.lab-brief textarea:focus {
+  outline: none;
+  border-color: var(--glow);
+}
+.lab-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lab-examples button {
+  min-height: 40px;
+  padding: 6px 16px;
+  font: inherit;
+  font-size: var(--t-xs);
+  color: var(--on-night-2);
+  background: transparent;
+  border: 1px solid var(--night-line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.lab-examples button:hover:not(:disabled) {
+  color: var(--on-night);
+  border-color: var(--on-night-2);
+}
+
+.lab-run {
+  display: grid;
+  gap: 28px;
+}
+.lab-log {
+  list-style: none;
+  margin: 0;
+  padding: 18px 20px;
+  max-height: 460px;
+  overflow: auto;
+  display: grid;
+  gap: 6px;
+  background: var(--night-2);
+  border-radius: 16px;
+  font-size: var(--t-xs);
+}
+.lab-line {
+  padding: 6px 0 6px 14px;
+  border-left: 2px solid var(--night-line);
+  color: var(--on-night-2);
+  overflow-wrap: anywhere;
+}
+.lab-status {
+  color: var(--on-night);
+  font-weight: 700;
+}
+.lab-say {
+  color: var(--on-night);
+  white-space: pre-wrap;
+}
+/* where Droid touches the code, the line warms */
+.lab-tool {
+  border-left-color: var(--ember);
+}
+.lab-tool b {
+  color: var(--ember);
+  margin-right: 6px;
+}
+.lab-denied {
+  border-left-color: var(--flare);
+  color: var(--flare);
+}
+.lab-check.is-ok {
+  border-left-color: var(--glow);
+}
+.lab-check.is-bad {
+  border-left-color: var(--flare);
+}
+.lab-check summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--on-night);
+}
+.lab pre {
+  margin-top: 8px;
+  max-height: 360px;
+  overflow: auto;
+  font-family: var(--face-readout);
+  font-size: 0.85em;
+  white-space: pre;
+}
+.lab-wait::after {
+  content: "";
+  animation: lab-dots 1.2s steps(4) infinite;
+}
+@keyframes lab-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-wait::after {
+    animation: none;
+    content: "…";
+  }
+}
+
+.lab-ready {
+  display: grid;
+  gap: 14px;
+}
+.lab-ready h2 {
+  font-family: var(--face-display);
+  font-size: var(--t-xl);
+  letter-spacing: -0.02em;
+}
+.lab-ready > p {
+  color: var(--on-night-2);
+  max-width: 60ch;
+}
+.lab-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: var(--t-xs);
+}
+.lab-ready details summary {
+  cursor: pointer;
+  color: var(--on-night-2);
+}
+.lab-actions {
+  display: flex;
+  gap: 12px;
+}

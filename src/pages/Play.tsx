@@ -18,9 +18,19 @@ const ORDER: GameId[] = ["chair-rise", "floor-rise", "tap", "reach"];
 
 /* The games, for real: pick one, play it with the camera or watch a
    simulated participant play it, and see what it measured. */
+/* a link can open one game straight away: /play?game=reach&mode=demo,
+   as the Lab does for a game Droid has just added */
+function fromLink(): { view: View; mode: Mode } {
+  const q = new URLSearchParams(window.location.search);
+  const game = q.get("game") as GameId | null;
+  const mode: Mode = q.get("mode") === "demo" ? "demo" : "camera";
+  if (!game || !(game in GAMES)) return { view: { kind: "hub" }, mode };
+  return { view: { kind: "game", game, mode, run: Date.now() }, mode };
+}
+
 export default function Play() {
-  const [view, setView] = useState<View>({ kind: "hub" });
-  const [mode, setMode] = useState<Mode>("camera");
+  const [view, setView] = useState<View>(() => fromLink().view);
+  const [mode, setMode] = useState<Mode>(() => fromLink().mode);
   /* a new screen starts at its top, not wherever the last was scrolled */
   const go = (next: View) => {
     setView(next);

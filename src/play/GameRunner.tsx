@@ -6,6 +6,7 @@ import type { PoseSource } from "./pose";
 import type { SessionRecord } from "./session";
 import { simulate, type GameId } from "./simulated";
 import { createThermal } from "./thermal";
+import { createCoach, loadMuted, saveMuted } from "./voice";
 
 export type Mode = "camera" | "demo";
 
@@ -36,6 +37,12 @@ export function GameRunner({
      browser's permission prompt, sitting unanswered */
   const [slow, setSlow] = useState(false);
   const [stage, setStage] = useState<"asking" | "tracker">("asking");
+  /* the voice coach; muting is read by the loop through a ref, so it
+     doesn't restart the game */
+  const [muted, setMuted] = useState(loadMuted);
+  const [voiceDown, setVoiceDown] = useState(false);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
 
   useEffect(() => {
     if (status !== "loading" || mode !== "camera") return;
@@ -52,6 +59,33 @@ export function GameRunner({
     const controller = createController(game);
     const thermal = createThermal();
     let lastKey = "";
+    const coach = createCoach();
+    const voice = GAMES[game].voice ?? {};
+    let heard: Hud | null = null;
+    const said = new Set<string>();
+    const alertAt = new Map<string, number>();
+    let toldSetup = false;
+    coach.prefetch(GAMES[game].setup);
+    if (voice.count) for (let i = 1; i <= 15; i++) coach.prefetch(String(i));
+
+    /* what the coach says, given what changed on screen */
+    const coachOn = (next: Hud, now: number) => {
+      if (mutedRef.current) {
+        heard = next;
+        return;
+      }
+      if (next.alert && next.alert !== heard?.alert && now - (alertAt.get(next.alert) ?? -Infinity) > 6000) {
+        alertAt.set(next.alert, now);
+        coach.say(next.alert, { urgent: true });
+      } else if (next.instruction && next.instruction !== heard?.instruction && (voice.repeat || !said.has(next.instruction))) {
+        said.add(next.instruction);
+        coach.say(next.instruction);
+      } else if (voice.count && next.big !== heard?.big && Number(next.big) > 0) {
+        coach.say(next.big, { urgent: true });
+      }
+      heard = next;
+      if (coach.failed) setVoiceDown(true);
+    };
 
     const loop = (now: number) => {
       if (!alive || !source) return;
@@ -74,7 +108,14 @@ export function GameRunner({
           lastKey = key;
           setHud(next);
         }
-        if (frame?.landmarks || frame?.hand) setFound(true);
+        if (frame?.landmarks || frame?.hand) {
+          setFound(true);
+          coachOn(next, now);
+        } else if (!toldSetup && !mutedRef.current) {
+          /* nobody in view yet: say how to set up, once */
+          toldSetup = true;
+          coach.say(GAMES[game].setup);
+        }
         /* a moment to see the final count before the result */
         if (controller.done) {
           finishedAt ??= now;
@@ -109,6 +150,7 @@ export function GameRunner({
       alive = false;
       cancelAnimationFrame(raf);
       source?.stop();
+      coach.stop(controller.done);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, mode]);
@@ -130,6 +172,19 @@ export function GameRunner({
             <Readout key={r.label} tone="night" label={r.label} value={r.value} unit={r.unit} />
           ))}
         </div>
+        <button
+          type="button"
+          className="runner-exit runner-voice"
+          aria-pressed={!muted && !voiceDown}
+          disabled={voiceDown}
+          title={voiceDown ? "The voice coach couldn't be reached" : "Spoken guidance, by Grok"}
+          onClick={() => {
+            setMuted(!muted);
+            saveMuted(!muted);
+          }}
+        >
+          {voiceDown ? "Voice unavailable" : muted ? "Voice off" : "Voice on"}
+        </button>
         <button type="button" className="runner-exit" onClick={onExit}>
           End game
         </button>
