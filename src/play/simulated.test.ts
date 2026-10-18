@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { createChairRise } from "./games/chairRise";
+import { createFloorRise } from "./games/floorRise";
 import { createReach, TARGETS } from "./games/reach";
-import { createSteadyHand } from "./games/steadyHand";
+import { createTap, summarise } from "./games/tap";
 import type { PoseFrame } from "./pose";
 import { simulate, type GameId } from "./simulated";
 
@@ -30,10 +31,29 @@ describe("the simulated participant", () => {
     expect(s.best.left).toBeGreaterThan(165);
   });
 
-  it("holds with a tremor the analysis can find", () => {
-    const g = createSteadyHand(10000);
-    const s = run("steady-hand", 13, (f) => g.update(f));
+  it("falls short once in the chair stand", () => {
+    const g = createChairRise();
+    expect(run("chair-rise", 31.6, (f) => g.update(f)).partials).toBe(1);
+  });
+
+  it("rises from the floor, pushing on the thighs", () => {
+    const g = createFloorRise();
+    const s = run("floor-rise", 13, (f) => g.update(f));
+    expect(s.completed).toBe(true);
+    expect(s.riseMs!).toBeGreaterThan(3000);
+    expect(s.riseMs!).toBeLessThan(5000);
+    expect(s.thighsMs).toBeGreaterThan(800);
+    expect(s.floorMs).toBeGreaterThan(0);
+  });
+
+  it("taps at a Parkinson's-like pace that fades", () => {
+    const g = createTap();
+    const s = run("tap", 12, (f) => g.update(f));
     expect(s.phase).toBe("done");
-    expect(s.result?.hz).toBeCloseTo(5.2, 0);
+    const m = summarise(s.taps);
+    expect(m.hz!).toBeGreaterThan(3);
+    expect(m.hz!).toBeLessThan(4.6);
+    expect(m.decrement!).toBeGreaterThan(0.2);
+    expect(m.hesitations).toBeGreaterThanOrEqual(1);
   });
 });

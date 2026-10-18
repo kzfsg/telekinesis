@@ -37,7 +37,7 @@ export function TeamScreen() {
           <span className="stat-value">6 of 7</span>
         </div>
         <div>
-          <span className="stat-label">Chair rise, best this week</span>
+          <span className="stat-label">Rise, best this week</span>
           <span className="stat-value">14</span>
           <span className="muted small">Twin predicts 9.8</span>
         </div>

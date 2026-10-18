@@ -74,7 +74,7 @@ export function GameRunner({
           lastKey = key;
           setHud(next);
         }
-        if (frame?.landmarks) setFound(true);
+        if (frame?.landmarks || frame?.hand) setFound(true);
         /* a moment to see the final count before the result */
         if (controller.done) {
           finishedAt ??= now;
@@ -91,7 +91,7 @@ export function GameRunner({
     (async () => {
       try {
         /* the tracker is only fetched when the camera is actually used */
-        source = mode === "camera" ? await (await import("./camera")).openCamera((s) => alive && setStage(s)) : simulate(game);
+        source = mode === "camera" ? await (await import("./camera")).openCamera(GAMES[game].tracking, (s) => alive && setStage(s)) : simulate(game);
         if (!alive) {
           source.stop();
           return;
@@ -120,7 +120,10 @@ export function GameRunner({
       <div className="runner-top">
         <div>
           <h1 className="runner-title">{info.name}</h1>
-          <span className="runner-sub">{mode === "demo" ? "Demo: a simulated participant is playing" : `Mirrors the ${info.mirrors.toLowerCase()}`}</span>
+          <span className="runner-sub">
+            {mode === "demo" ? "Demo: a simulated participant is playing" : `Mirrors the ${info.mirrors.toLowerCase()}`}
+            {info.condition ? ` · ${info.condition}` : ""}
+          </span>
         </div>
         <div className="runner-readouts" aria-live="polite">
           {hud?.readouts.map((r) => (
@@ -138,7 +141,7 @@ export function GameRunner({
         {status === "loading" && (
           <div className="stage-cover">
             <LatticeLoader
-              label={mode === "demo" ? "Starting the demo" : stage === "asking" ? "Asking to use the camera" : "Loading the body tracker"}
+              label={mode === "demo" ? "Starting the demo" : stage === "asking" ? "Asking to use the camera" : `Loading the ${info.tracking === "hand" ? "hand" : "body"} tracker`}
               pattern="ripple"
               color="#FF9628"
               glow
@@ -165,7 +168,7 @@ export function GameRunner({
 
         {status === "running" && !found && (
           <div className="stage-cover stage-cover-soft">
-            <LatticeLoader label="Finding you in the camera" pattern="ripple" color="#FF9628" glow glowColor="#FF323C" showTimer={false} fontSize={18} />
+            <LatticeLoader label={info.tracking === "hand" ? "Finding your hand" : "Finding you in the camera"} pattern="ripple" color="#FF9628" glow glowColor="#FF323C" showTimer={false} fontSize={18} />
             <p>{info.setup}</p>
           </div>
         )}
@@ -195,6 +198,11 @@ export function GameRunner({
                 </span>
               )}
             </div>
+            {hud.alert && (
+              <p className="stage-alert" role="status">
+                <span aria-hidden="true">!</span> {hud.alert}
+              </p>
+            )}
             <p className="stage-instruction" aria-live="polite">
               {hud.instruction}
             </p>

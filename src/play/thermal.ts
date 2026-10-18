@@ -1,5 +1,5 @@
 import { dist, mid } from "./geometry";
-import { BONES, GLOW_JOINTS, J, type Point, type PoseFrame } from "./pose";
+import { BONES, GLOW_JOINTS, H, HAND_BONES, HAND_GLOW, J, type Point, type PoseFrame } from "./pose";
 
 /* ══ The thermal view ════════════════════════════════════
    The participant as a heat camera would show them, if heat were
@@ -13,7 +13,10 @@ import { BONES, GLOW_JOINTS, J, type Point, type PoseFrame } from "./pose";
    round glow per joint, blended with "screen" so glows that overlap
    pool brighter, the way the logo's strokes fuse, without adding up
    to white when the whole body moves at once, as it does standing.
-   Last, the tracked skeleton, faint, on top. */
+   Last, the tracked skeleton, faint, on top.
+
+   A hand is drawn the same way, scaled to the hand: its bones cool,
+   its fingertips glowing as they move. */
 
 /* the system's heat ramp, still (0) to moving most (1) */
 const RAMP: [number, number, number][] = [
@@ -51,21 +54,18 @@ export function createThermal() {
   /* how warm each joint is: the speed of its smoothed position, eased
      so heat builds and cools over a fraction of a second rather than
      flickering */
-  const warm = (frame: PoseFrame) => {
-    const p = frame.landmarks;
-    if (!p) return;
-    const scale = dist(p[J.leftShoulder], p[J.rightShoulder], frame.aspect) || 0.1;
-    const dt = prevT === null ? 0 : (frame.t - prevT) / 1000;
-    for (const j of GLOW_JOINTS) {
+  const warm = (p: Point[], joints: number[], scale: number, t: number, aspect: number) => {
+    const dt = prevT === null ? 0 : (t - prevT) / 1000;
+    for (const j of joints) {
       const was = smooth.get(j);
       const now = was ? { x: was.x + (p[j].x - was.x) * 0.4, y: was.y + (p[j].y - was.y) * 0.4 } : { x: p[j].x, y: p[j].y };
       smooth.set(j, now);
-      const v = was && dt > 0 ? dist(now, was, frame.aspect) / scale / dt : 0;
+      const v = was && dt > 0 ? dist(now, was, aspect) / scale / dt : 0;
       const old = speed.get(j) ?? 0;
       const k = v > old ? 0.35 : 0.08;
       speed.set(j, old + (Math.min(v, FULL * 1.5) - old) * k);
     }
-    prevT = frame.t;
+    prevT = t;
   };
 
   const heatOf = (j: number) => Math.min(1, Math.max(0, ((speed.get(j) ?? 0) - NOISE) / (FULL - NOISE)));
@@ -114,8 +114,8 @@ export function createThermal() {
     }
 
     if (frame?.landmarks) {
-      warm(frame);
       const p = frame.landmarks;
+      warm(p, GLOW_JOINTS, dist(p[J.leftShoulder], p[J.rightShoulder], frame.aspect) || 0.1, frame.t, frame.aspect);
       const at = (pt: Point) => toCanvas(pt, box);
       const shoulderPx = dist(p[J.leftShoulder], p[J.rightShoulder], frame.aspect) * box.h;
 
@@ -184,8 +184,76 @@ export function createThermal() {
         ctx.arc(x, y, Math.max(2.5, shoulderPx * 0.022), 0, Math.PI * 2);
         ctx.fill();
       }
+    } else if (frame?.hand) {
+      drawHand(ctx, frame.hand, frame, box);
     }
     ctx.restore();
+  }
+
+  function drawHand(ctx: CanvasRenderingContext2D, p: Point[], frame: PoseFrame, box: Fit) {
+    const at = (pt: Point) => toCanvas(pt, box);
+    const size = dist(p[H.wrist], p[H.middleMcp], frame.aspect) || 0.1;
+    /* fingers move fast against a hand's length; a third as sensitive
+       as the body keeps a brisk tap orange rather than every twitch */
+    warm(p, HAND_GLOW, size * 3, frame.t, frame.aspect);
+    const handPx = size * box.h;
+
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(40,120,245,0.4)";
+    ctx.lineWidth = handPx * 0.2;
+    ctx.shadowColor = "rgba(40,120,245,0.6)";
+    ctx.shadowBlur = handPx * 0.2;
+    for (const [a, b] of HAND_BONES) {
+      const [x1, y1] = at(p[a]);
+      const [x2, y2] = at(p[b]);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    const palm = at(mid(p[H.wrist], p[H.middleMcp]));
+    ctx.fillStyle = "rgba(12,44,150,0.45)";
+    ctx.beginPath();
+    ctx.ellipse(palm[0], palm[1], handPx * 0.42, handPx * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    for (const j of HAND_GLOW) {
+      const h = heatOf(j);
+      if (h < 0.08) continue;
+      const [x, y] = at(p[j]);
+      const r = handPx * (0.14 + h * 0.26);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, rgba(heatRgb(h), 0.8 * h ** 1.2));
+      g.addColorStop(0.45, rgba(heatRgb(h * 0.8), 0.4 * h ** 1.2));
+      g.addColorStop(1, rgba(heatRgb(0.15), 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(233,237,251,0.45)";
+    ctx.lineWidth = Math.max(1.5, handPx * 0.012);
+    for (const [a, b] of HAND_BONES) {
+      const [x1, y1] = at(p[a]);
+      const [x2, y2] = at(p[b]);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(233,237,251,0.85)";
+    for (let j = 0; j < p.length; j++) {
+      const [x, y] = at(p[j]);
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(2, handPx * 0.018), 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   return { draw };

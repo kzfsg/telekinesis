@@ -1,26 +1,40 @@
 import { Readout } from "../components/Readout";
 import { GAMES } from "./controllers";
+import { flagValue } from "./quality";
 import { payloadBytes, type SessionRecord } from "./session";
 
 /* What the game measured, and exactly what it would send: the
    record itself, printed, with its size, beside what stayed put. */
-export function Result({ record, onAgain, onHub }: { record: SessionRecord; onAgain: () => void; onHub: () => void }) {
+export function Result({ record, onAgain, onHub, onInfo }: { record: SessionRecord; onAgain: () => void; onHub: () => void; onInfo: () => void }) {
   const m = record.measures;
   const info = GAMES[record.game];
 
   const headline =
     record.game === "chair-rise"
       ? { big: String(m.rises), label: "full stands in 30 seconds" }
+      : record.game === "floor-rise"
+        ? m.rise_s === null
+          ? { big: "Not yet", label: "didn't reach standing in 30 seconds" }
+          : { big: `${m.rise_s} s`, label: "to stand up from the floor" }
       : record.game === "reach"
         ? { big: `${m.left_abduction_deg}° and ${m.right_abduction_deg}°`, label: "highest reach, left arm and right" }
-        : { big: m.tremor_mm === null ? "–" : `${m.tremor_mm} mm`, label: "average shake while holding" };
+        : { big: m.taps_per_s === null ? String(m.taps) : `${m.taps_per_s}`, label: m.taps_per_s === null ? "taps in 10 seconds" : `taps a second, ${m.taps} in 10 seconds` };
 
+  const pct = (x: unknown) => (typeof x === "number" ? String(Math.round(x * 100)) : "–");
+  const durations = (m.rise_durations_s as number[] | undefined) ?? [];
   const readings =
     record.game === "chair-rise"
       ? [
           { label: "Rises", value: String(m.rises) },
-          { label: "First stand", value: String((m.stand_times_s as number[])[0] ?? "–"), unit: " s" },
+          { label: "Fell short", value: String(m.partial_rises ?? 0) },
+          { label: "Quickest stand", value: durations.length ? String(Math.min(...durations)) : "–", unit: durations.length ? " s" : "" },
         ]
+      : record.game === "floor-rise"
+        ? [
+            { label: "Off the floor", value: String(m.off_floor_s ?? "–"), unit: m.off_floor_s === null ? "" : " s" },
+            { label: "Halfway", value: String(m.halfway_s ?? "–"), unit: m.halfway_s === null ? "" : " s" },
+            { label: "Hands on legs", value: String(m.hands_on_legs_s), unit: " s" },
+          ]
       : record.game === "reach"
         ? [
             { label: "Targets", value: `${m.targets_reached} of 8` },
@@ -28,9 +42,14 @@ export function Result({ record, onAgain, onHub }: { record: SessionRecord; onAg
             { label: "Right", value: String(m.right_abduction_deg), unit: "°" },
           ]
         : [
-            { label: "Shake", value: String(m.tremor_mm ?? "–"), unit: " mm" },
-            { label: "Tremor", value: m.tremor_hz === null ? "None found" : String(m.tremor_hz), unit: m.tremor_hz === null ? "" : " Hz" },
+            { label: "Uneven", value: pct(m.rhythm_irregularity), unit: m.rhythm_irregularity === null ? "" : "%" },
+            { label: "Opening", value: String(m.amplitude_cm ?? "–"), unit: m.amplitude_cm === null ? "" : " cm" },
+            { label: "Fade", value: pct(m.amplitude_decrement), unit: m.amplitude_decrement === null ? "" : "%" },
+            { label: "Stalls", value: String(m.hesitations) },
           ];
+
+  const flags = record.quality ?? [];
+  const failed = flags.filter((f) => !f.ok);
 
   return (
     <section className="result" aria-labelledby="result-title">
@@ -45,12 +64,32 @@ export function Result({ record, onAgain, onHub }: { record: SessionRecord; onAg
             <Readout key={r.label} tone="night" label={r.label} value={r.value} unit={r.unit} />
           ))}
         </div>
+        {flags.length > 0 && (
+          <div className={`result-quality ${failed.length ? "is-warn" : "is-ok"}`}>
+            <span className="result-quality-head">
+              {failed.length === 0 ? "Recording checks passed" : `${failed.length} recording ${failed.length === 1 ? "check" : "checks"} flagged`}
+            </span>
+            <ul>
+              {flags.map((f) => (
+                <li key={f.id} className={f.ok ? "ok" : "warn"}>
+                  <span aria-hidden="true">{f.ok ? "✓" : "!"}</span>
+                  <span>{f.label}</span>
+                  <span className="result-quality-v">{flagValue(f)}</span>
+                </li>
+              ))}
+            </ul>
+            {failed.length > 0 && <p>The measures are kept, marked for a person to look at before they count.</p>}
+          </div>
+        )}
         <div className="result-actions">
           <button type="button" className="hbtn hbtn-solid hbtn-l result-solid" onClick={onAgain}>
             Play again
           </button>
           <button type="button" className="hbtn hbtn-quiet hbtn-l result-quiet" onClick={onHub}>
             Choose another game
+          </button>
+          <button type="button" className="hbtn hbtn-quiet hbtn-l result-quiet" onClick={onInfo}>
+            About this game
           </button>
         </div>
       </div>

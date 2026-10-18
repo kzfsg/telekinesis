@@ -1,3 +1,4 @@
+import type { QualityFlag } from "./quality";
 import type { GameId } from "./simulated";
 
 /* What a finished game sends: the measurements and nothing else.
@@ -11,6 +12,10 @@ export type SessionRecord = {
   /* true when the simulated participant played, not a person */
   demo: boolean;
   measures: Record<string, number | number[] | string | null>;
+  /* whether the recording itself can be trusted: framing, light,
+     a steady camera. Separate from the measures, so a low score and
+     a bad recording are never confused */
+  quality?: QualityFlag[];
 };
 
 const KEY = "telekinesis.sessions";

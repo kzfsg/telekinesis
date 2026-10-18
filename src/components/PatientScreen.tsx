@@ -6,9 +6,9 @@ import { Readout } from "./Readout";
 import { ThermalFigure } from "./ThermalFigure";
 
 const TODAY = [
-  { game: "Chair rise", time: "3 min", done: true },
+  { game: "Rise", time: "3 min", done: true },
   { game: "Reach", time: "2 min", done: true },
-  { game: "Steady hand", time: "2 min", done: false },
+  { game: "Tap", time: "1 min", done: false },
 ];
 
 /* The participant's screen: the camera's view at night, warm only
@@ -19,7 +19,7 @@ export function PatientScreen() {
       <CursorGrid heat cellSize={26} cellGap={2} cellRadius={4} radius={80} fillOpacity={0.55} maxOpacity={0.7} gridOpacity={0.05} gridColor="#3A4680" holdTime={300} fadeDuration={1800} spotlight={0.15} edgeFade={0.08} className="screen-heat">
         <div className="game">
           <div className="game-top">
-            <h3>Chair rise</h3>
+            <h3>Rise</h3>
             <Readout tone="night" label="Left" value="0:18" />
           </div>
           <div className="game-mid">
